@@ -83,9 +83,9 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 
 ## Backend Status
 
-**Current task:** Task 5 — YouTube search service + POST /search
+**Current task:** Task 6 — Transcript service + POST /rank
 **Branch:** `feat/backend-current-task`
-**Overall progress:** 4 / 6 tasks complete
+**Overall progress:** 5 / 6 tasks complete
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -93,8 +93,8 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | Task 2: FastAPI scaffold + models | ✅ Done | Health endpoint, all Pydantic models, TDD green |
 | Task 3: Gemini service | ✅ Done | analyze_question (2.5-pro) + rank_segments (2.0-flash), 3 tests passing |
 | Task 4: POST /analyze | ✅ Done | 5 tests passing, router registered |
-| Task 5: YouTube search + POST /search | 🔄 In progress | |
-| Task 6: Transcript + POST /rank | ⏳ Pending | |
+| Task 5: YouTube search + POST /search | ✅ Done | 6 tests passing, YouTube API + /search route |
+| Task 6: Transcript + POST /rank | 🔄 In progress | |
 
 ---
 
