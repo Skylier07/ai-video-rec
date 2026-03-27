@@ -83,9 +83,9 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 
 ## Backend Status
 
-**Current task:** Task 6 — Transcript service + POST /rank
+**Current task:** ✅ ALL BACKEND TASKS COMPLETE
 **Branch:** `feat/backend-current-task`
-**Overall progress:** 5 / 6 tasks complete
+**Overall progress:** 6 / 6 tasks complete
 
 | Task | Status | Notes |
 |------|--------|-------|
@@ -94,7 +94,7 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | Task 3: Gemini service | ✅ Done | analyze_question (2.5-pro) + rank_segments (2.0-flash), 3 tests passing |
 | Task 4: POST /analyze | ✅ Done | 5 tests passing, router registered |
 | Task 5: YouTube search + POST /search | ✅ Done | 6 tests passing, YouTube API + /search route |
-| Task 6: Transcript + POST /rank | 🔄 In progress | |
+| Task 6: Transcript + POST /rank | ✅ Done | 8 tests passing, /rank endpoint live |
 
 ---
 
@@ -103,6 +103,7 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 - CORS is set to `allow_origins=["*"]` during dev — no need to configure anything on the frontend
 - All timestamps are in **seconds** (integers)
 - If a video has no captions, it will be silently skipped — /rank may return fewer than 3 segments (handle gracefully in UI)
+- `/rank` uses `youtube-transcript-api v1.2.4` — if YouTube rate-limits the IP, `/rank` returns `{"segments": []}`. Frontend should show a friendly fallback in this case.
 - The `/analyze` endpoint requires at least one of `image_base64` or `text` — send `null` for the unused field
 - Environment variable for frontend: `NEXT_PUBLIC_API_URL=http://localhost:8000`
 
@@ -133,3 +134,5 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | 2026-03-27 | Claude | Merged `feat/frontend-ui-updates` into `feat/backend-current-task` — no conflicts, 6 backend tests still passing |
 | 2026-03-27 | Claude | Task 5 complete ✅ — YouTube search service + /search endpoint |
 | 2026-03-27 | Claude | Task 6 starting — transcript fetching + /rank endpoint. **Backend will be fully ready after Task 6.** |
+| 2026-03-27 | Claude | 🎉 **ALL BACKEND TASKS COMPLETE** — 8/8 tests passing. `/analyze`, `/search`, `/rank` all live. Gemini can now wire up API integration (Task 4). |
+| 2026-03-27 | Claude | fix: upgraded youtube-transcript-api 0.6.3→1.2.4 (new v1 API). `/rank` verified working. Note: YouTube may rate-limit transcript fetching after many requests — this clears on its own. |
