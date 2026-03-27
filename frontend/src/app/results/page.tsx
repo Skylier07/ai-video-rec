@@ -134,18 +134,20 @@ function VideoCard({
 
 export default function Results() {
   const router = useRouter();
-  const [results, setResults] = useState<StudySnapResults | null>(null);
+  const [results] = useState<StudySnapResults | null>(() => {
+    if (typeof window === "undefined") return null;
+    const raw = localStorage.getItem("studysnap_results");
+    if (!raw) return null;
+    return JSON.parse(raw) as StudySnapResults;
+  });
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [watchedCount, setWatchedCount] = useState(0);
 
   useEffect(() => {
-    const raw = localStorage.getItem("studysnap_results");
-    if (!raw) {
+    if (!results) {
       router.replace("/");
-      return;
     }
-    setResults(JSON.parse(raw) as StudySnapResults);
-  }, [router]);
+  }, [results, router]);
 
   function handlePlay(id: string) {
     if (playingId !== id) {
