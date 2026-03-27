@@ -14,6 +14,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from app.routers import analyze as analyze_router
+app.include_router(analyze_router.router)
+
 
 @app.get("/health")
 def health():

@@ -40,3 +40,19 @@ def test_rank_segments_returns_list():
     assert isinstance(result, list)
     assert result[0]["video_id"] == "abc"
     assert result[0]["start_time"] == 10
+
+
+def test_analyze_endpoint_with_text(client):
+    with patch("app.routers.analyze.analyze_question") as mock_fn:
+        mock_fn.return_value = {"question": "Solve for x: 2x=4", "concepts": ["algebra", "linear equations"]}
+        response = client.post("/analyze", json={"text": "Solve for x: 2x=4"})
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["question"] == "Solve for x: 2x=4"
+    assert "algebra" in data["concepts"]
+
+
+def test_analyze_endpoint_requires_image_or_text(client):
+    response = client.post("/analyze", json={})
+    assert response.status_code == 422
