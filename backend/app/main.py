@@ -17,6 +17,9 @@ app.add_middleware(
 from app.routers import analyze as analyze_router
 app.include_router(analyze_router.router)
 
+from app.routers import search as search_router
+app.include_router(search_router.router)
+
 
 @app.get("/health")
 def health():
