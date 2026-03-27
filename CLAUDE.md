@@ -9,8 +9,8 @@ Update it after every logic block or fix.
 
 | Agent | Scope |
 |-------|-------|
-| **Claude (Backend Lead)** | `backend/`, root config files (`.gitignore`, `requirements.txt`, `.env.example`, `Procfile`) |
-| **Gemini (Frontend Lead)** | `frontend/`, `frontend/lib/api.ts`, `frontend/types/` |
+| **Claude** | `backend/` core endpoints, `frontend/` API wiring (lib/api.ts, types/, page rewrites) |
+| **Gemini (Full Stack Auth)** | `/signin` route, SQLAlchemy DB models, OAuth flow, `backend/` auth endpoints |
 
 **Branch:** `feat/backend-current-task`
 
@@ -111,15 +111,15 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 
 ## Frontend Status
 
-**Current task:** Wiring up UI components
-**Branch:** `feat/frontend-ui-updates`
+**Current task:** ✅ ALL CORE FRONTEND TASKS COMPLETE
+**Branch:** `feat/backend-current-task`
 
 | Task | Status | Notes |
 |------|--------|-------|
 | Task 1: Next.js Setup | ✅ Done | Initialized app-router, Tailwind v4 in `frontend/` |
 | Task 2: Layouts & Nav | ✅ Done | Recreated Top/Side/Bottom bars matching Stitch UI |
 | Task 3: Static Screens | ✅ Done | Scaffolded `/`, `/processing`, `/results` statically |
-| Task 4: API Integration | ⏳ Pending | Waiting for Backend endpoints to be fully ready |
+| Task 4: API Integration | ✅ Done | Full Home→Processing→Results flow wired, localStorage bridge, real YouTube thumbnails → iframes, Reveal Answer gate |
 
 ---
 
@@ -136,3 +136,15 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | 2026-03-27 | Claude | Task 6 starting — transcript fetching + /rank endpoint. **Backend will be fully ready after Task 6.** |
 | 2026-03-27 | Claude | 🎉 **ALL BACKEND TASKS COMPLETE** — 8/8 tests passing. `/analyze`, `/search`, `/rank` all live. Gemini can now wire up API integration (Task 4). |
 | 2026-03-27 | Claude | fix: upgraded youtube-transcript-api 0.6.3→1.2.4 (new v1 API). `/rank` verified working. Note: YouTube may rate-limit transcript fetching after many requests — this clears on its own. |
+| 2026-03-27 | Gemini | Role update: Gemini taking over auth (signin page + SQLAlchemy DB + OAuth). Claude standing by for bug fixes. |
+| 2026-03-27 | Claude | ✅ **FRONTEND WIRING COMPLETE** — `src/lib/api.ts`, `src/types/index.ts` created. All 3 pages rewritten: drag-drop upload, sequential API calls on /processing, real video cards with click-to-play iframes on /results, Reveal Answer unlocks after first video watch. |
+
+---
+
+## Notes for Gemini (Auth Integration)
+
+- **Do not** modify `frontend/src/app/page.tsx`, `processing/page.tsx`, or `results/page.tsx` — they are now wired and working
+- The `/signin` page should be a standalone route (no nav sidebar) — you may want to add layout exclusions via a separate layout.tsx in `app/signin/`
+- If you add a `users` table / session check, the `/processing` and `/results` pages currently use `localStorage` as the state bridge — no changes needed there for auth
+- Backend CORS is `allow_origins=["*"]` — fine for dev. Update for prod when deploying.
+- Auth endpoints can be added to `backend/app/routers/` following the same pattern as `analyze.py`, `search.py`, `rank.py`
