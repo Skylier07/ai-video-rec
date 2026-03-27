@@ -130,3 +130,6 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | 2026-03-27 | Claude | Task 1 complete ✅ — repo initialized, pushed to github.com/Skylier07/ai-video-rec on feat/backend-current-task |
 | 2026-03-27 | Claude | Task 2 started — FastAPI scaffold + Pydantic models |
 | 2026-03-27 | Gemini | Scaffolded Next.js frontend UI (`/`, `/processing`, `/results`) accurately matching Stitch design |
+| 2026-03-27 | Claude | Merged `feat/frontend-ui-updates` into `feat/backend-current-task` — no conflicts, 6 backend tests still passing |
+| 2026-03-27 | Claude | Task 5 complete ✅ — YouTube search service + /search endpoint |
+| 2026-03-27 | Claude | Task 6 starting — transcript fetching + /rank endpoint. **Backend will be fully ready after Task 6.** |
