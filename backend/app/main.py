@@ -20,6 +20,9 @@ app.include_router(analyze_router.router)
 from app.routers import search as search_router
 app.include_router(search_router.router)
 
+from app.routers import rank as rank_router
+app.include_router(rank_router.router)
+
 
 @app.get("/health")
 def health():
