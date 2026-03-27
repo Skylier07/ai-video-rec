@@ -83,16 +83,16 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 
 ## Backend Status
 
-**Current task:** Task 2 — FastAPI App Scaffold + Pydantic Models
+**Current task:** Task 4 — POST /analyze endpoint
 **Branch:** `feat/backend-current-task`
-**Overall progress:** 1 / 6 tasks complete
+**Overall progress:** 3 / 6 tasks complete
 
 | Task | Status | Notes |
 |------|--------|-------|
 | Task 1: Repo setup | ✅ Done | git init, .gitignore, README, requirements.txt |
-| Task 2: FastAPI scaffold + models | 🔄 In progress | |
-| Task 3: Gemini service | ⏳ Pending | |
-| Task 4: POST /analyze | ⏳ Pending | |
+| Task 2: FastAPI scaffold + models | ✅ Done | Health endpoint, all Pydantic models, TDD green |
+| Task 3: Gemini service | ✅ Done | analyze_question (2.5-pro) + rank_segments (2.0-flash), 3 tests passing |
+| Task 4: POST /analyze | 🔄 In progress | |
 | Task 5: YouTube search + POST /search | ⏳ Pending | |
 | Task 6: Transcript + POST /rank | ⏳ Pending | |
 
