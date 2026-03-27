@@ -108,6 +108,20 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 
 ---
 
+## Frontend Status
+
+**Current task:** Wiring up UI components
+**Branch:** `feat/frontend-ui-updates`
+
+| Task | Status | Notes |
+|------|--------|-------|
+| Task 1: Next.js Setup | ✅ Done | Initialized app-router, Tailwind v4 in `frontend/` |
+| Task 2: Layouts & Nav | ✅ Done | Recreated Top/Side/Bottom bars matching Stitch UI |
+| Task 3: Static Screens | ✅ Done | Scaffolded `/`, `/processing`, `/results` statically |
+| Task 4: API Integration | ⏳ Pending | Waiting for Backend endpoints to be fully ready |
+
+---
+
 ## Change Log
 
 | Date | Agent | Change |
@@ -115,3 +129,4 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | 2026-03-27 | Claude | Created CLAUDE.md, initialized Backend Lead role, starting Task 1 |
 | 2026-03-27 | Claude | Task 1 complete ✅ — repo initialized, pushed to github.com/Skylier07/ai-video-rec on feat/backend-current-task |
 | 2026-03-27 | Claude | Task 2 started — FastAPI scaffold + Pydantic models |
+| 2026-03-27 | Gemini | Scaffolded Next.js frontend UI (`/`, `/processing`, `/results`) accurately matching Stitch design |
