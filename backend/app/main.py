@@ -1,10 +1,12 @@
 import os
+from pathlib import Path
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from dotenv import load_dotenv
 
-load_dotenv()
+# Use explicit path so .env loads correctly regardless of working directory
+load_dotenv(Path(__file__).parent.parent / ".env")
 
 from app.db.database import engine, Base
 
