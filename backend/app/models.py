@@ -6,6 +6,7 @@ class AnalyzeRequest(BaseModel):
     image_base64: Optional[str] = None   # base64-encoded image bytes
     image_mime_type: Optional[str] = None  # e.g. "image/jpeg"
     text: Optional[str] = None
+    mode: Optional[str] = "accurate"  # "accurate" = 3.1-pro, "fast" = 3.1-flash
 
 
 class AnalyzeResponse(BaseModel):

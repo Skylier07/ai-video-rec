@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
 import type { StudySnapInput, StudySnapResults } from "@/types";
 import { analyzeQuestion, searchVideos, rankSegments, saveHistory } from "@/lib/api";
+import { getSolveMode } from "@/components/SolveModeSetting";
 
 const STEPS = [
   { label: "Analyzing problem...", sub: "Step 1 of 3: Gemini Vision", toast: "Analyzing your question..." },
@@ -46,6 +47,7 @@ export default function Processing() {
           input.imageBase64,
           input.imageMimeType,
           input.text,
+          getSolveMode(),
         );
 
         setStep(1);

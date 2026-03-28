@@ -6,7 +6,8 @@ import google.generativeai as genai
 
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
 
-model_analyze = genai.GenerativeModel("gemini-2.5-pro")
+model_analyze_accurate = genai.GenerativeModel("gemini-3.1-pro-preview")
+model_analyze_fast = genai.GenerativeModel("gemini-3.1-flash-preview")
 model_rank = genai.GenerativeModel("gemini-2.5-flash")
 
 ANALYZE_PROMPT = """Analyze this problem carefully and return a JSON object with exactly these fields:
@@ -27,8 +28,10 @@ def analyze_question(
     image_base64: str | None,
     image_mime_type: str | None,
     text: str | None,
+    mode: str = "accurate",
 ) -> dict:
-    """Extract question and concepts using Gemini 2.5-pro."""
+    """Extract question and concepts. mode='accurate' uses 3.1-pro, mode='fast' uses 3.1-flash."""
+    model = model_analyze_fast if mode == "fast" else model_analyze_accurate
     parts: list = []
 
     if image_base64:
@@ -44,7 +47,7 @@ def analyze_question(
 
     parts.append(ANALYZE_PROMPT)
 
-    response = model_analyze.generate_content(parts)
+    response = model.generate_content(parts)
     return _parse_json(response.text)
 
 

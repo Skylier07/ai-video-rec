@@ -19,11 +19,13 @@ export async function analyzeQuestion(
   imageBase64: string | null,
   imageMimeType: string | null,
   text: string | null,
+  mode: string = "accurate",
 ): Promise<{ question: string; concepts: string[] }> {
   return post("/analyze", {
     image_base64: imageBase64,
     image_mime_type: imageMimeType,
     text,
+    mode,
   });
 }
 

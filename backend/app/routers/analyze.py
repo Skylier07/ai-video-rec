@@ -14,6 +14,7 @@ def analyze(request: AnalyzeRequest):
         image_base64=request.image_base64,
         image_mime_type=request.image_mime_type,
         text=request.text,
+        mode=request.mode or "accurate",
     )
     return AnalyzeResponse(
         question=result["question"],
