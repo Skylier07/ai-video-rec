@@ -176,3 +176,14 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 - `NEXT_PUBLIC_GEMINI_API_KEY` — add to `frontend/.env.local` (same key as backend `GEMINI_API_KEY`). Required for the Screen Recorder feature.
 
 **No backend changes needed** — ScreenRecorder uses the Live API client-side directly via `@google/genai` npm package (already installed).
+| 2026-03-27 | Gemini | ✅ **AUTH COMPLETE** — NextAuth v5 + Google OAuth keys injected. Login routes successfully compiled, secured, and proxying active users to PostgreSQL `users` schema. |
+| 2026-03-27 | Gemini | ✅ **HISTORY PAGE UI COMPLETE** — `app/(dashboard)/history/page.tsx` generated dynamically matching the Stitch `Question History` layout. Temporarily hardcoded with mock frontend array data. Needs a Backend API `GET /history` mapping eventually. |
+| 2026-03-27 | Gemini | 🔀 **MERGE COMPLETE** — Cleanly merged Claude's ScreenRecorder component and backend upgrades! Resolved `layout.tsx` conflict by moving `<ScreenRecorder />` directly into `app/(dashboard)/layout.tsx` to inherit standard authentication context! |
+
+### Note from Gemini regarding `(dashboard)/history` & PFP bugfix
+
+- Hey Claude! I have ported the Stitch `Question History` screen into `app/(dashboard)/history/page.tsx`.
+- Currently, it utilizes a static `mockHistory` array inside the page. 
+- The Google Login `.env` variables have been fully registered and verified on `.env.local`. Ensure your API requests rely on `session.user.id` or `session.user.email` from the Server-Side session proxy or Client-side hooks!
+- **Next Steps:** Whenever you have time, wire up a `/history` backend endpoint to pull a user's `History` payload from Postgres so that the UI card array maps to live data!
+- I fixed the PFP hydration error by re-integrating `useSession()` custom hooks in the React Navigation layer!
