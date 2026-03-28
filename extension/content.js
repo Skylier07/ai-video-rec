@@ -199,7 +199,11 @@ If no question is visible when they ask for videos, say: "I don't see a question
       const setupMsg = {
         setup: {
           model: "models/gemini-3.1-flash-live-preview",
-          generationConfig: { responseModalities: ["AUDIO"] },
+          // Manual mode: AUDIO + TEXT so model has a text channel for the FIND_VIDEOS signal
+          // and TEXT modality also reliably triggers turn responses with VAD.
+          generationConfig: {
+            responseModalities: detectionMode === "manual" ? ["AUDIO", "TEXT"] : ["AUDIO"],
+          },
           outputAudioTranscription: {},
           systemInstruction: {
             parts: [{ text: detectionMode === "manual" ? SYSTEM_INSTRUCTION_MANUAL : SYSTEM_INSTRUCTION_AUTO }],
@@ -274,8 +278,10 @@ If no question is visible when they ask for videos, say: "I don't see a question
         if (detectionMode === "auto" && fullText.startsWith("PROBLEM_DETECTED:") && latestBase64) {
           const question = fullText.replace("PROBLEM_DETECTED:", "").trim();
           showToast(question, latestBase64);
-        } else if (detectionMode === "manual" && fullText.includes("FIND_VIDEOS:") && latestBase64) {
-          const match = fullText.match(/FIND_VIDEOS:\s*(.+)/s);
+        } else if (detectionMode === "manual" && latestBase64) {
+          // TEXT modality: signal comes through modelTurn.parts[].text reliably
+          // Transcription fallback: outputTranscription.text (less reliable for exact format)
+          const match = fullText.match(/FIND_VIDEOS:\s*(.+)/si);
           if (match) showToast(match[1].trim(), latestBase64);
         }
       }
