@@ -1,4 +1,5 @@
 @import "tailwindcss";
+@import "katex/dist/katex.min.css";
 
 @theme inline {
   --color-surface-variant: #e3e1e9;
