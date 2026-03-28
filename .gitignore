@@ -13,3 +13,6 @@ frontend/.env.local
 # General
 .DS_Store
 *.log
+
+# Extension secrets (never commit API keys)
+extension/config.js
