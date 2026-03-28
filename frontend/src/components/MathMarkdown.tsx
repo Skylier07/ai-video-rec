@@ -20,7 +20,7 @@ const components: Components = {
     if (isBlock) {
       return (
         <pre className="bg-surface-container rounded-lg p-4 overflow-x-auto my-3">
-          <code className={`font-mono text-sm ${langClass ?? ""}`}>{children}</code>
+          <code className={`font-mono text-sm ${langClass}`}>{children}</code>
         </pre>
       );
     }
