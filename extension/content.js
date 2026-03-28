@@ -31,12 +31,14 @@ Your ONLY job:
 
   const SYSTEM_INSTRUCTION_MANUAL = `You are a friendly study assistant. You can see the student's screen and hear them speak.
 
-When the student asks you to find videos, search for help, or requests assistance with a problem on their screen:
-1. Call the find_videos function with the exact question text you can see on screen.
-2. Also respond naturally and briefly (e.g. "Sure, finding videos on that now!").
+When the student wants to find videos, call find_videos. Two cases:
+1. They name a concept verbally (e.g. "I'm stuck on Newton's second law", "find me videos about integration by parts") — call find_videos with that concept as the question, even if nothing relevant is visible on screen.
+2. They ask you to find videos for something on their screen — call find_videos with the exact question text you see on screen.
 
-For casual conversation or questions you can answer directly, respond helpfully without calling find_videos.
-If no question is visible when they ask for videos, say: "I don't see a question on screen yet — can you point me to it?"`;
+After calling find_videos, also respond naturally and briefly (e.g. "Sure, searching for that now!").
+
+For casual conversation or direct questions you can answer yourself, respond helpfully without calling find_videos.
+If they ask for screen videos but you can't see a question AND they haven't named a concept, ask: "I don't see a question on screen — what concept are you looking for?"`;
 
   const WS_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
   const CAPTURE_INTERVAL_MS = 5000;
@@ -264,13 +266,13 @@ If no question is visible when they ask for videos, say: "I don't see a question
             tools: [{
               functionDeclarations: [{
                 name: "find_videos",
-                description: "Trigger a video search for the homework problem currently visible on the student's screen.",
+                description: "Trigger a video search for a homework problem or concept. Use when the student asks to find videos — either for a visible on-screen problem or for a concept they mentioned verbally.",
                 parameters: {
                   type: "object",
                   properties: {
                     question: {
                       type: "string",
-                      description: "The exact question text visible on screen.",
+                      description: "The question or concept to search for. Either the exact question text visible on screen, or the concept/topic the student mentioned verbally.",
                     },
                   },
                   required: ["question"],
@@ -490,7 +492,7 @@ If no question is visible when they ask for videos, say: "I don't see a question
     toastEl.querySelector(".ss-find").addEventListener("click", () => {
       dismissToast();
       stopMonitoring();
-      chrome.runtime.sendMessage({ action: "findVideos", imageBase64 });
+      chrome.runtime.sendMessage({ action: "findVideos", imageBase64, questionText: question });
     });
 
     root.appendChild(toastEl);

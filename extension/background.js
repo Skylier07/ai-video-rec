@@ -22,16 +22,17 @@ chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
 
   // ── Open StudySnap processing page with captured frame ───────────────────
   if (msg.action === "findVideos") {
-    handleFindVideos(msg.imageBase64).then(() => sendResponse({ ok: true }));
+    handleFindVideos(msg.imageBase64, msg.questionText).then(() => sendResponse({ ok: true }));
     return true;
   }
 });
 
-async function handleFindVideos(imageBase64) {
+async function handleFindVideos(imageBase64, questionText) {
   const data = {
     imageBase64,
     imageMimeType: "image/jpeg",
-    text: null,
+    // Pass the verbally-stated question/concept so /analyze can use it directly
+    text: questionText || null,
   };
 
   await chrome.storage.session.set({ studysnap_input: data });
