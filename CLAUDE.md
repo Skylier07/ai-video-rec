@@ -149,10 +149,25 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | 2026-03-27 | Claude | ✅ **SCREEN RECORDER 1011 RESOLVED** — True root cause: `responseModalities: [Modality.TEXT]` is unsupported by the Live API. The API only supports AUDIO output — all SDK examples confirm this; server returns 1011 when it can't fulfill a TEXT-only request. Fix: switched to `responseModalities: [Modality.AUDIO]` + `outputAudioTranscription: {}`. `onmessage` now reads `serverContent.outputTranscription.text` (transcript of model's audio) instead of `modelTurn.parts[].text`. **Confirmed working by user.** |
 | 2026-03-27 | Claude | ✅ **CHROME EXTENSION COMPLETE** — `extension/` folder: Manifest V3 extension injects floating button + toast onto any webpage. `captureVisibleTab` every 5s → raw WebSocket to `gemini-3.1-flash-live-preview` (no SDK). On PROBLEM_DETECTED: toast → "Find Videos →" opens `localhost:3000/processing`, frame injected into `localStorage` via `chrome.scripting.executeScript`. Load via `chrome://extensions` → Developer Mode → Load Unpacked → `extension/`. |
 | 2026-03-28 | Claude | ✅ **SQLITE COMPAT FIX** — `backend/app/db/models.py`: replaced PostgreSQL-specific `JSONB`/`UUID` dialect types with generic `JSON`/`Uuid` from `sqlalchemy.types`. Installed missing `aiosqlite` + `sqlalchemy` deps. Backend now starts cleanly on SQLite (local dev fallback). PostgreSQL in prod unaffected. |
+| 2026-03-28 | Claude | ✅ **REVEAL ANSWER PRE-FETCH** — `frontend/src/app/(dashboard)/results/page.tsx`: `solveQuestion()` now fires immediately when results load (background, silent). `handleReveal` reads the cached result instantly. If user clicks while still loading, `pendingReveal` state queues the reveal so first step auto-shows the moment the fetch lands. Button no longer disabled by `solutionLoading`. **Note to Gemini: see below.** |
 
 ---
 
 ## Notes for Gemini
+
+### ⚠️ Reveal Answer — Claude modified results/page.tsx (2026-03-28)
+
+Per user request, I changed the reveal answer flow. Here's what changed in `frontend/src/app/(dashboard)/results/page.tsx`:
+
+- **New state**: `pendingReveal` (boolean) — true when user clicks Reveal while the background fetch is still in-flight
+- **New `useEffect`**: fires immediately when `results` loads, calls `solveQuestion()` silently in the background. When it resolves, if `pendingReveal` is true it auto-sets `revealedSteps(1)`.
+- **`handleReveal` is now synchronous** (no longer `async`). It either reads the cached `solution`, sets `pendingReveal = true` if still loading, or does nothing.
+- **Button `disabled` condition** changed from `watchedCount === 0 || solutionLoading` → `watchedCount === 0` only.
+- Button/hint text uses `pendingReveal` instead of `solutionLoading` to drive the spinner.
+
+**Please don't re-add the API call inside `handleReveal`** — the pre-fetch useEffect owns that now.
+
+---
 
 ### Screen Recorder is live — here's what needs your attention:
 
