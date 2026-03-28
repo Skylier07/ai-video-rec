@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { StudySnapResults, VideoSegment, VideoMeta } from "@/types";
 import { solveQuestion, type SolveResponse } from "@/lib/api";
+import MathMarkdown from "@/components/MathMarkdown";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -272,9 +273,10 @@ export default function Results() {
                   Extracted Question
                 </span>
               </div>
-              <h3 className="text-2xl font-bold text-on-surface mb-8 leading-snug">
-                {results.question}
-              </h3>
+              <MathMarkdown
+                content={results.question}
+                className="text-2xl font-bold text-on-surface mb-8 leading-snug"
+              />
 
               {/* Concept Pills */}
               <div className="flex flex-wrap gap-2 mb-10">
@@ -354,7 +356,7 @@ export default function Results() {
                       </div>
                       <div className="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/10 shadow-sm">
                         <h5 className="text-sm font-bold text-on-surface mb-2">{step.title}</h5>
-                        <p className="text-sm text-on-surface-variant leading-relaxed whitespace-pre-wrap">{step.content}</p>
+                        <MathMarkdown content={step.content} className="text-sm text-on-surface-variant leading-relaxed" />
                       </div>
                     </div>
                   ))}
@@ -366,7 +368,7 @@ export default function Results() {
                         <span className="material-symbols-outlined text-secondary text-[20px]">check_circle</span>
                         <span className="text-xs font-black text-secondary uppercase tracking-widest">Final Answer</span>
                       </div>
-                      <p className="text-lg font-bold text-on-surface leading-relaxed">{solution.final_answer}</p>
+                      <MathMarkdown content={solution.final_answer} className="text-lg font-bold text-on-surface leading-relaxed" />
                     </div>
                   )}
                 </div>
