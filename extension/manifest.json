@@ -3,7 +3,7 @@
   "name": "StudySnap",
   "version": "1.0",
   "description": "Detect homework problems on any webpage and find explanatory videos.",
-  "permissions": ["activeTab", "tabs", "storage", "scripting", "offscreen"],
+  "permissions": ["activeTab", "tabs", "storage", "scripting"],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"
