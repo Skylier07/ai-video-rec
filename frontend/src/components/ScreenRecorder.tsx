@@ -74,6 +74,7 @@ export default function ScreenRecorder() {
     if (!base64) return;
     latestBase64Ref.current = base64;
     pendingTextRef.current = "";
+    console.log("[ScreenRecorder] Sending frame");
 
     sessionRef.current.sendRealtimeInput({
       video: { data: base64, mimeType: "image/jpeg" },
@@ -113,12 +114,13 @@ export default function ScreenRecorder() {
       const session = await genAI.live.connect({
         model: MODEL,
         config: {
-          responseModalities: [Modality.TEXT],
+          responseModalities: [Modality.AUDIO],
+          outputAudioTranscription: {},
           systemInstruction: SYSTEM_INSTRUCTION,
         },
         callbacks: {
           onopen: () => {
-            // Connection confirmed — start sending frames
+            console.log("[ScreenRecorder] Live API connection opened");
             intervalRef.current = setInterval(sendFrame, CAPTURE_INTERVAL_MS);
             setTimeout(sendFrame, 500);
           },
@@ -126,9 +128,9 @@ export default function ScreenRecorder() {
             const content = message.serverContent;
             if (!content) return;
 
-            const parts = content.modelTurn?.parts ?? [];
-            for (const part of parts) {
-              if (part.text) pendingTextRef.current += part.text;
+            // Audio mode: text arrives via outputTranscription, not modelTurn.parts
+            if (content.outputTranscription?.text) {
+              pendingTextRef.current += content.outputTranscription.text;
             }
 
             if (content.turnComplete && latestBase64Ref.current) {
