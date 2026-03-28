@@ -48,8 +48,6 @@ export default async function HistoryPage() {
               const formattedDate = new Date(entry.created_at).toLocaleDateString('en-US', {
                 month: 'short', day: 'numeric', year: 'numeric'
               });
-              const tags = entry.concepts || [];
-              
               return (
                  <div key={entry.id} className="group relative bg-surface-container-lowest p-6 rounded-xl transition-all duration-300 hover:shadow-2xl hover:shadow-primary/5 border-b-2 border-transparent hover:border-secondary-container">
                     <div className="flex justify-between items-start mb-4">
@@ -58,13 +56,6 @@ export default async function HistoryPage() {
                     <h3 className="text-lg font-bold text-primary mb-3 leading-snug line-clamp-3 group-hover:text-primary-container transition-colors">
                       {entry.extracted_question}
                     </h3>
-                    <div className="flex flex-wrap gap-2 mb-6">
-                      {tags.map((tag: string) => (
-                          <span key={tag} className="px-2 py-1 bg-secondary-fixed text-on-secondary-fixed text-[10px] font-bold uppercase tracking-wider rounded">
-                            {tag}
-                          </span>
-                      ))}
-                    </div>
                     <div className="flex items-center justify-between mt-auto">
                       <Link href={`/results?q=${encodeURIComponent(entry.extracted_question)}`} className="text-primary font-bold text-sm flex items-center gap-1 group/btn hover:text-primary-container">
                         Revisit

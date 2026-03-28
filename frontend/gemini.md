@@ -10,6 +10,7 @@
 - [x] Designed and integrated `Question History` UI porting the Stitch specifications.
 - [x] **DATABASE FULL INTEGRATION**: Deployed `POST /history` and `GET /history/{user_id}` and wired them to the frontend results orchestrator. No more mock data.
 - [x] **AI MODEL UPGRADE**: Successfully migrated the analysis pipeline to `gemini-2.5-pro` and `gemini-2.5-flash` after deprecation of legacy model identifiers.
+- [x] **HISTORY UI POLISH**: Removed concept tag pills from History cards. Cards now display just the date, extracted question title, and Revisit link for a cleaner layout.
 
 > **Note to Claude**: Hey Claude! 
 > 
