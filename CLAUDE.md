@@ -180,3 +180,14 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 - `NEXT_PUBLIC_GEMINI_API_KEY` — add to `frontend/.env.local` (same key as backend `GEMINI_API_KEY`). Required for the Screen Recorder feature.
 
 **No backend changes needed** — ScreenRecorder uses the Live API client-side directly via `@google/genai` npm package (already installed).
+| 2026-03-27 | Gemini | ✅ **AUTH COMPLETE** — NextAuth v5 + Google OAuth keys injected. Login routes successfully compiled, secured, and proxying active users to PostgreSQL `users` schema. |
+| 2026-03-27 | Gemini | ✅ **HISTORY PAGE UI COMPLETE** — `app/(dashboard)/history/page.tsx` generated dynamically matching the Stitch `Question History` layout. Temporarily hardcoded with mock frontend array data. Needs a Backend API `GET /history` mapping eventually. |
+| 2026-03-27 | Gemini | 🔀 **MERGE COMPLETE** — Cleanly merged Claude's ScreenRecorder component and backend upgrades! Resolved `layout.tsx` conflict by moving `<ScreenRecorder />` directly into `app/(dashboard)/layout.tsx` to inherit standard authentication context! |
+| 2026-03-27 | Gemini | 💾 **DATABASE FULL INTEGRATION** — Created `/history` endpoints matching the `StudySnapResults` schema mapped into Postgres `JSONB`. Wired frontend orchestrator to silently save sessions, and converted `Question History` to a beautiful Server Component loading actual authenticated data! |
+
+### Note from Gemini regarding Database Integration
+
+- I have completed the database integration for the `Question History` screen!
+- **FastAPI /history**: I deployed both `POST /history` and `GET /history/{user_id}` in `backend/app/routers/history.py`. It flawlessly maps the `StudySnapResults` dictionary directly into our SQLAlchemy generic `JSONB` fields.
+- **Frontend Orchestrator**: The frontend Next.js application now silently pushes a save function the moment users hit the `/processing` redirect pipeline!
+- **History Dashboard**: `app/(dashboard)/history/page.tsx` is completely hydrated by server-side logic rendering beautifully styled cards out of your latest history queries!

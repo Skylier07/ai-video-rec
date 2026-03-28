@@ -39,3 +39,27 @@ export async function rankSegments(
 ): Promise<{ segments: VideoSegment[] }> {
   return post("/rank", { concepts, videos });
 }
+
+export interface HistoryPayload {
+  user_id: string;
+  question: string;
+  concepts: string[];
+  segments: VideoSegment[];
+  videos: VideoMeta[];
+}
+
+export async function saveHistory(payload: HistoryPayload): Promise<{ status: string }> {
+  return post("/history", payload);
+}
+
+export async function getHistory(userId: string): Promise<any[]> {
+  const res = await fetch(`${API_BASE}/history/${userId}`, {
+    method: "GET",
+    headers: { "Content-Type": "application/json" },
+  });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`/history/${userId} failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}

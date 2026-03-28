@@ -2,8 +2,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { useSession } from "next-auth/react";
 import type { StudySnapInput, StudySnapResults } from "@/types";
-import { analyzeQuestion, searchVideos, rankSegments } from "@/lib/api";
+import { analyzeQuestion, searchVideos, rankSegments, saveHistory } from "@/lib/api";
 
 const STEPS = [
   { label: "Analyzing problem...", sub: "Step 1 of 3: Gemini Vision", toast: "Analyzing your question..." },
@@ -13,12 +14,21 @@ const STEPS = [
 
 export default function Processing() {
   const router = useRouter();
+  const { data: session } = useSession();
   const [step, setStep] = useState(0);
   const [error, setError] = useState<string | null>(null);
   const ran = useRef(false);
 
+  // We rely on session loading status indirectly via useEffect deps
+  const userId = session?.user?.id;
+
   useEffect(() => {
+    // Prevent double execution in strict mode
     if (ran.current) return;
+    
+    // In next-auth, session might be loading. We wait until it's either defined or explicitly null
+    if (session === undefined) return; 
+    
     ran.current = true;
 
     async function run() {
@@ -51,6 +61,18 @@ export default function Processing() {
           videos: searchResult.videos,
         };
         localStorage.setItem("studysnap_results", JSON.stringify(results));
+        
+        // Save history in the background! Overlook errors so UI doesn't crash on redirect.
+        if (userId) {
+           saveHistory({
+             user_id: userId,
+             question: results.question,
+             concepts: results.concepts,
+             segments: results.segments,
+             videos: results.videos,
+           }).catch(console.error);
+        }
+
         router.push("/results");
       } catch (err) {
         setError(err instanceof Error ? err.message : "Something went wrong. Please try again.");
@@ -58,7 +80,7 @@ export default function Processing() {
     }
 
     run();
-  }, [router]);
+  }, [router, session, userId]);
 
   const current = STEPS[step] ?? STEPS[0];
 

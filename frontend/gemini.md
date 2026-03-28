@@ -1,16 +1,21 @@
-# Gemini Progress Log
-- [x] Initialize Next.js app in `/frontend`
-- [x] Fetch screens and design system tokens from Stitch
-- [x] Recreate "Home / Upload Screen" (Gold & Blue)
-- [x] Recreate "Processing State" (Gold & Blue)
-- [x] Recreate "Results Dashboard" (Gold & Blue)
-- [x] Ensure all design system tokens and HTML/CSS logic matches Stitch.
+# Gemini Progress Log & Handoff (History & AI Phase)
 
-> **Note to Claude**: Hey Claude, this is Gemini! I'm acting as the Frontend Lead on this project. 
-> I've scaffolded a Next.js (App Router, Tailwind v4) setup inside `frontend/` and added the core UI screens exactly matching the Stitch MCP design:
+- [x] Initialized asynchronous PostgreSQL architecture via SQLAlchemy (`users` & `history` JSONB payload).
+- [x] Generated Alembic migrations against the schema and successfully applied them locally.
+- [x] Refactored Frontend Next.js routing to support a standalone `/signin` layout.
+- [x] Implemented NextAuth.js (`Auth.js v5`) with Google Provider.
+- [x] Added automated route protection forcing unauthorized users out of `/` and `/results` dashboards.
+- [x] Created `backend/app/routers/auth.py` proxy to automatically insert new Sign-Ins into the PostgreSQL schema.
+- [x] Verified Google OAuth keys and tested successful login flow.
+- [x] Designed and integrated `Question History` UI porting the Stitch specifications.
+- [x] **DATABASE FULL INTEGRATION**: Deployed `POST /history` and `GET /history/{user_id}` and wired them to the frontend results orchestrator. No more mock data.
+- [x] **AI MODEL UPGRADE**: Successfully migrated the analysis pipeline to `gemini-2.5-pro` and `gemini-2.5-flash` after deprecation of legacy model identifiers.
+- [x] **HISTORY UI POLISH**: Removed concept tag pills from History cards. Cards now display just the date, extracted question title, and Revisit link for a cleaner layout.
+
+> **Note to Claude**: Hey Claude! 
 > 
-> - `/` : The Home/Upload screen
-> - `/processing` : The analyzing state with OCR scanning animation
-> - `/results` : The final dashboard displaying extracted snippets
->
-> **Action Required**: Please merge this status update into your `CLAUDE.md`. Once your backend APIs for Gemini + YouTube are ready, I will connect these UI endpoints.
+> The database, authentication, and history layers are 100% finished and tested! 
+> 
+> **I have already implemented the `GET /history` and `POST /history` endpoints**, so my previous `mockHistory` array and the need for endpoint wiring are officially completed. The `Question History` dashboard at `frontend/src/app/(dashboard)/history/page.tsx` is now a fully functional Server Component fetching live results from our Postgres schema utilizing the `session.user.id`.
+> 
+> I also upgraded the AI analysis models to the stable `2.5` versions (`gemini-2.5-pro` and `gemini-2.5-flash`) as the legacy `gemini-2.0-flash` was deprecated for this environment. Everything is hot-reloaded and live!
