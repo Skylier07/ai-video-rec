@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { GoogleGenAI, Modality, type Session, type LiveServerMessage } from "@google/genai";
+import { GoogleGenAI, type Session, type LiveServerMessage } from "@google/genai";
 
 const SYSTEM_INSTRUCTION = `You are a homework problem detector. You receive frames from a student's screen.
 
@@ -75,8 +75,15 @@ export default function ScreenRecorder() {
     latestBase64Ref.current = base64;
     pendingTextRef.current = "";
 
-    sessionRef.current.sendRealtimeInput({
-      video: { data: base64, mimeType: "image/jpeg" },
+    sessionRef.current.sendClientContent({
+      turns: [{
+        role: "user",
+        parts: [
+          { inlineData: { data: base64, mimeType: "image/jpeg" } },
+          { text: "Analyze this screen." },
+        ],
+      }],
+      turnComplete: true,
     });
   }, [captureFrame]);
 
@@ -112,7 +119,7 @@ export default function ScreenRecorder() {
       const session = await genAI.live.connect({
         model: MODEL,
         config: {
-          responseModalities: [Modality.TEXT],
+          responseModalities: ["TEXT"],
           systemInstruction: SYSTEM_INSTRUCTION,
         },
         callbacks: {
@@ -143,8 +150,13 @@ export default function ScreenRecorder() {
             console.error("Live API error:", e.message);
             setConnectionError("Live API error — check console for details");
           },
-          onclose: (_e: CloseEvent) => {
-            if (isRecordingRef.current) stopRecording();
+          onclose: (e: CloseEvent) => {
+            const reason = e.reason ? `${e.code}: ${e.reason}` : `code ${e.code}`;
+            console.warn("Live API WS closed:", reason);
+            if (isRecordingRef.current) {
+              setConnectionError(`Connection closed unexpectedly (${reason})`);
+              stopRecording();
+            }
           },
         },
       });
