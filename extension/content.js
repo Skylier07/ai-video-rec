@@ -56,6 +56,14 @@ If no question is visible when they ask for videos, say: "I don't see a question
     }
   });
 
+  // Keep detectionMode in sync across ALL tabs when storage changes
+  chrome.storage.onChanged.addListener((changes, namespace) => {
+    if (namespace === "local" && changes.detection_mode) {
+      detectionMode = changes.detection_mode.newValue;
+      console.log("[StudySnap] Detection mode updated:", detectionMode);
+    }
+  });
+
   // ── Root container ────────────────────────────────────────────────────────
 
   const root = document.createElement("div");
