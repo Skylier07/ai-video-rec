@@ -92,6 +92,19 @@ export function SideNavBar() {
             History
           </span>
         </Link>
+        <Link
+          className={`flex items-center gap-3 p-3 rounded-lg font-bold hover:translate-x-1 transition-all duration-200 ${
+            isActive('/settings')
+              ? 'text-[#00236f] dark:text-[#e9c349] bg-[#e3e1e9] dark:bg-[#1e3a8a]'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'
+          }`}
+          href="/settings"
+        >
+          <span className="material-symbols-outlined">settings</span>
+          <span className="font-manrope text-sm font-semibold uppercase tracking-widest">
+            Settings
+          </span>
+        </Link>
       </nav>
       <div className="mt-auto p-4 bg-[#f4f3fa] dark:bg-[#00236f] rounded-xl border border-white/40">
         <p className="text-xs font-bold text-primary mb-2">PRO FEATURES</p>
@@ -146,11 +159,15 @@ export function BottomNavBar() {
         <span className="font-manrope text-[10px] font-medium">History</span>
       </Link>
       <Link
-        className="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-2 hover:text-[#00236f] dark:hover:text-[#e9c349] transition-all"
-        href="#"
+        className={`flex flex-col items-center justify-center p-3 transition-all duration-300 ${
+          isActive('/settings')
+            ? 'bg-[#ffe088] dark:bg-[#e9c349] text-[#00236f] rounded-2xl transform -translate-y-2 shadow-lg'
+            : 'text-slate-500 dark:text-slate-400 hover:text-[#00236f]'
+        }`}
+        href="/settings"
       >
-        <span className="material-symbols-outlined">person</span>
-        <span className="font-manrope text-[10px] font-medium">Profile</span>
+        <span className="material-symbols-outlined">settings</span>
+        <span className="font-manrope text-[10px] font-medium">Settings</span>
       </Link>
     </nav>
   );
