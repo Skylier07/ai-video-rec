@@ -24,7 +24,7 @@ export default async function RootLayout({
   const session = await auth();
 
   return (
-    <html lang="en" className={`light ${manrope.variable}`}>
+    <html lang="en" className={`light ${manrope.variable}`} suppressHydrationWarning>
        <head>
           <ThemeInitScript />
           <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
