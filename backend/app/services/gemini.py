@@ -18,10 +18,17 @@ ANALYZE_PROMPT = """Analyze this problem carefully and return a JSON object with
 
 
 def _parse_json(text: str) -> dict | list:
-    """Strip markdown fences and parse JSON."""
+    """Strip markdown fences and parse JSON. Falls back to escaping invalid backslashes (e.g. LaTeX)."""
     cleaned = re.sub(r"^```(?:json)?\s*", "", text.strip(), flags=re.MULTILINE)
     cleaned = re.sub(r"\s*```$", "", cleaned.strip(), flags=re.MULTILINE)
-    return json.loads(cleaned.strip())
+    cleaned = cleaned.strip()
+    try:
+        return json.loads(cleaned)
+    except json.JSONDecodeError:
+        # Gemini sometimes writes raw LaTeX backslashes (\frac, \sin, etc.) without escaping them.
+        # Fix: escape any backslash not already part of a valid JSON escape sequence.
+        fixed = re.sub(r'\\(?!["\\/bfnrtu])', r'\\\\', cleaned)
+        return json.loads(fixed)
 
 
 def analyze_question(
