@@ -147,12 +147,7 @@ function VideoCard({
 
 export default function Results() {
   const router = useRouter();
-  const [results] = useState<StudySnapResults | null>(() => {
-    if (typeof window === "undefined") return null;
-    const raw = localStorage.getItem("studysnap_results");
-    if (!raw) return null;
-    return JSON.parse(raw) as StudySnapResults;
-  });
+  const [results, setResults] = useState<StudySnapResults | null>(null);
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [watchedCount, setWatchedCount] = useState(0);
   const [solution, setSolution] = useState<SolveResponse | null>(null);
@@ -162,19 +157,20 @@ export default function Results() {
   // true when user clicked Reveal while the background fetch was still in-flight
   const [pendingReveal, setPendingReveal] = useState(false);
 
+  // Read localStorage after hydration to avoid SSR/client mismatch
   useEffect(() => {
-    if (!results) {
+    const raw = localStorage.getItem("studysnap_results");
+    if (!raw) {
       router.replace("/");
+      return;
     }
-  }, [results, router]);
+    setResults(JSON.parse(raw) as StudySnapResults);
+  }, [router]);
 
   // Pre-fetch solution as soon as results are shown — display is still gated by the button
   useEffect(() => {
     if (!results) return;
-    const input =
-      typeof window !== "undefined"
-        ? JSON.parse(localStorage.getItem("studysnap_input") || "{}")
-        : {};
+    const input = JSON.parse(localStorage.getItem("studysnap_input") || "{}");
     setSolutionLoading(true);
     solveQuestion(
       results.question,
