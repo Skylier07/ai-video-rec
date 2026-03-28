@@ -1,6 +1,6 @@
-import Link from "next/link";
 import { auth } from "@/auth";
 import { getHistory } from "@/lib/api";
+import RevisitButton from "@/components/RevisitButton";
 
 export default async function HistoryPage() {
   const session = await auth();
@@ -57,10 +57,7 @@ export default async function HistoryPage() {
                       {entry.extracted_question}
                     </h3>
                     <div className="flex items-center justify-between mt-auto">
-                      <Link href={`/results?q=${encodeURIComponent(entry.extracted_question)}`} className="text-primary font-bold text-sm flex items-center gap-1 group/btn hover:text-primary-container">
-                        Revisit
-                        <span className="material-symbols-outlined text-sm group-hover/btn:translate-x-1 transition-transform">arrow_forward</span>
-                      </Link>
+                      <RevisitButton entry={entry} />
                       <div className="w-8 h-8 rounded-full bg-surface-container-low flex items-center justify-center text-on-surface-variant opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer">
                         <span className="material-symbols-outlined text-sm">more_vert</span>
                       </div>
