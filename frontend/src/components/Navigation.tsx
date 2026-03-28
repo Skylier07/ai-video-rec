@@ -2,14 +2,16 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import type { Session } from 'next-auth';
-import { useSession } from 'next-auth/react';
+import dynamic from 'next/dynamic';
+
+// Load the user menu entirely client-side — avoids SSR/hydration mismatch
+// from useSession returning different values on server vs client.
+const UserMenuButton = dynamic(() => import('./UserMenuButton'), { ssr: false });
 
 export function TopNavBar() {
   const pathname = usePathname();
-  const { data: session } = useSession();
-  
   const isActive = (path: string) => pathname === path;
+
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-[#00236f]/80 backdrop-blur-xl shadow-[0_16px_32px_rgba(0,35,111,0.04)] flex justify-between items-center px-6 h-16">
       <div className="flex items-center gap-8">
@@ -19,8 +21,8 @@ export function TopNavBar() {
         <div className="hidden md:flex gap-6 items-center">
           <Link
             className={`font-manrope font-bold tracking-tight px-1 h-16 flex items-center transition-all duration-300 ${
-              isActive('/') 
-                ? 'text-[#00236f] dark:text-[#e9c349] border-b-2 border-[#e9c349]' 
+              isActive('/')
+                ? 'text-[#00236f] dark:text-[#e9c349] border-b-2 border-[#e9c349]'
                 : 'text-slate-500 dark:text-slate-300 hover:text-[#00236f] dark:hover:text-[#e9c349]'
             }`}
             href="/"
@@ -39,24 +41,15 @@ export function TopNavBar() {
           </Link>
         </div>
       </div>
-      <div className="flex items-center gap-4">
-        <button className="relative w-10 h-10 rounded-full overflow-hidden hover:ring-2 hover:ring-[#e9c349] transition-all bg-slate-100 dark:bg-white/10 flex items-center justify-center">
-          {session?.user?.image ? (
-            <img 
-              src={session.user.image} 
-              alt={session.user.name || "User Profile"} 
-              className="w-full h-full object-cover"
-              referrerPolicy="no-referrer"
-            />
-          ) : (
-            <span className="material-symbols-outlined text-[#00236f] dark:text-[#e9c349]">account_circle</span>
-          )}
-        </button>
-      </div>
+
+      {/* User menu loaded purely client-side via dynamic import (ssr:false) */}
+      <UserMenuButton />
+
       <div className="bg-gradient-to-r from-[#00236f] to-[#1e3a8a] h-[2px] w-full absolute bottom-0 left-0"></div>
     </nav>
   );
 }
+
 
 export function SideNavBar() {
   const pathname = usePathname();
