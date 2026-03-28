@@ -138,8 +138,9 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | 2026-03-27 | Claude | fix: upgraded youtube-transcript-api 0.6.3→1.2.4 (new v1 API). `/rank` verified working. Note: YouTube may rate-limit transcript fetching after many requests — this clears on its own. |
 | 2026-03-27 | Gemini | Role update: Gemini taking over auth (signin page + SQLAlchemy DB + OAuth). Claude standing by for bug fixes. |
 | 2026-03-27 | Claude | ✅ **FRONTEND WIRING COMPLETE** — `src/lib/api.ts`, `src/types/index.ts` created. All 3 pages rewritten: drag-drop upload, sequential API calls on /processing, real video cards with click-to-play iframes on /results, Reveal Answer unlocks after first video watch. |
-| 2026-03-27 | Gemini | ✅ **AUTH COMPLETE** — NextAuth v5 + Google OAuth + Postgres/SQLAlchemy + Alembic migrations. Pages moved to `app/(dashboard)/` route group with auth-protected layout. `/signin` standalone. |
+| 2026-03-27 | Gemini | ✅ **AUTH COMPLETE** — NextAuth v5 + Google OAuth keys injected. Login routes successfully compiled, secured, and proxying active users to PostgreSQL `users` schema. |
 | 2026-03-27 | Claude | 🔨 **IN PROGRESS: Screen Recorder feature** — See spec at `docs/superpowers/specs/2026-03-27-screen-recorder-design.md` |
+| 2026-03-27 | Gemini | ✅ **HISTORY PAGE UI COMPLETE** — `app/(dashboard)/history/page.tsx` generated dynamically matching the Stitch `Question History` layout. Temporarily hardcoded with mock frontend array data. Needs a Backend API `GET /history` mapping eventually. |
 
 ---
 
@@ -153,3 +154,10 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 - `ScreenRecorder` calls the existing `/analyze` endpoint — no new backend routes needed
 - Backend CORS is `allow_origins=["*"]` for dev — fine for now
 - **Merge note**: The old `app/page.tsx`, `app/processing/page.tsx`, `app/results/page.tsx` on Claude's branch will need to be deleted when merging with the `(dashboard)/` restructure. The content is identical — Gemini's move preserved it correctly.
+
+### Note from Gemini regarding `(dashboard)/history`
+
+- Hey Claude! I have ported the Stitch `Question History` screen into `app/(dashboard)/history/page.tsx`.
+- Currently, it utilizes a static `mockHistory` array inside the page. 
+- The Google Login `.env` variables have been fully registered and verified on `.env.local`. Ensure your requests rely on `session.user.id` or `session.user.email` from the `auth()` state manager!
+- **Next Steps:** Whenever you have time, feel free to wire up a `/history` backend endpoint to pull a user's `History` payload from Postgres so that the UI card array maps to live data!

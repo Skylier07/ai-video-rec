@@ -1,6 +1,12 @@
+"use client";
+
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export function TopNavBar() {
+  const pathname = usePathname();
+  
+  const isActive = (path: string) => pathname === path;
   return (
     <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-[#00236f]/80 backdrop-blur-xl shadow-[0_16px_32px_rgba(0,35,111,0.04)] flex justify-between items-center px-6 h-16">
       <div className="flex items-center gap-8">
@@ -9,22 +15,30 @@ export function TopNavBar() {
         </span>
         <div className="hidden md:flex gap-6 items-center">
           <Link
-            className="font-manrope font-bold tracking-tight text-[#00236f] dark:text-[#e9c349] border-b-2 border-[#e9c349] px-1 h-16 flex items-center"
+            className={`font-manrope font-bold tracking-tight px-1 h-16 flex items-center transition-all duration-300 ${
+              isActive('/') 
+                ? 'text-[#00236f] dark:text-[#e9c349] border-b-2 border-[#e9c349]' 
+                : 'text-slate-500 dark:text-slate-300 hover:text-[#00236f] dark:hover:text-[#e9c349]'
+            }`}
             href="/"
           >
             Home
           </Link>
           <Link
-            className="font-manrope font-bold tracking-tight text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors duration-300 px-3 py-1 rounded-lg"
-            href="#"
+            className={`font-manrope font-bold tracking-tight px-3 py-1 rounded-lg transition-all duration-300 ${
+              isActive('/history')
+                ? 'text-[#00236f] dark:text-[#e9c349] bg-slate-100 dark:bg-white/10'
+                : 'text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10'
+            }`}
+            href="/history"
           >
-            My Library
+            History
           </Link>
           <Link
             className="font-manrope font-bold tracking-tight text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors duration-300 px-3 py-1 rounded-lg"
-            href="#"
+            href="/history"
           >
-            Flashcards
+            Vault
           </Link>
         </div>
       </div>
@@ -42,6 +56,9 @@ export function TopNavBar() {
 }
 
 export function SideNavBar() {
+  const pathname = usePathname();
+  const isActive = (path: string) => pathname === path;
+  
   return (
     <aside className="h-screen w-64 hidden lg:flex flex-col border-r border-slate-100 dark:border-white/5 bg-[#faf8ff] dark:bg-[#001a4d] p-4 gap-4">
       <div className="mb-8 px-2">
@@ -54,7 +71,11 @@ export function SideNavBar() {
       </div>
       <nav className="space-y-2">
         <Link
-          className="flex items-center gap-3 p-3 text-[#00236f] dark:text-[#e9c349] bg-[#e3e1e9] dark:bg-[#1e3a8a] rounded-lg font-bold hover:translate-x-1 transition-transform duration-200"
+          className={`flex items-center gap-3 p-3 rounded-lg font-bold hover:translate-x-1 transition-all duration-200 ${
+            isActive('/')
+              ? 'text-[#00236f] dark:text-[#e9c349] bg-[#e3e1e9] dark:bg-[#1e3a8a]'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'
+          }`}
           href="/"
         >
           <span className="material-symbols-outlined">home</span>
@@ -63,17 +84,25 @@ export function SideNavBar() {
           </span>
         </Link>
         <Link
-          className="flex items-center gap-3 p-3 text-slate-600 dark:text-slate-400 hover:translate-x-1 transition-transform duration-200"
-          href="#"
+          className={`flex items-center gap-3 p-3 rounded-lg font-bold hover:translate-x-1 transition-all duration-200 ${
+            isActive('/library')
+              ? 'text-[#00236f] dark:text-[#e9c349] bg-[#e3e1e9] dark:bg-[#1e3a8a]'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'
+          }`}
+          href="/history"
         >
           <span className="material-symbols-outlined">library_books</span>
           <span className="font-manrope text-sm font-semibold uppercase tracking-widest">
-            My Library
+            Academic Vault
           </span>
         </Link>
         <Link
-          className="flex items-center gap-3 p-3 text-slate-600 dark:text-slate-400 hover:translate-x-1 transition-transform duration-200"
-          href="#"
+          className={`flex items-center gap-3 p-3 rounded-lg font-bold hover:translate-x-1 transition-all duration-200 ${
+            isActive('/history')
+              ? 'text-[#00236f] dark:text-[#e9c349] bg-[#e3e1e9] dark:bg-[#1e3a8a]'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'
+          }`}
+          href="/history"
         >
           <span className="material-symbols-outlined">history</span>
           <span className="font-manrope text-sm font-semibold uppercase tracking-widest">
@@ -101,10 +130,17 @@ export function SideNavBar() {
 }
 
 export function BottomNavBar() {
+  const pathname = usePathname();
+  const isActive = (path: string) => pathname === path;
+  
   return (
     <nav className="fixed bottom-0 left-0 w-full flex justify-around items-end px-4 pb-4 h-20 bg-white/90 dark:bg-[#001a4d]/90 backdrop-blur-md rounded-t-2xl border-t border-slate-100 dark:border-white/5 shadow-[0_-8px_24px_rgba(0,0,0,0.05)] lg:hidden z-50">
       <Link
-        className="flex flex-col items-center justify-center bg-[#ffe088] dark:bg-[#e9c349] text-[#00236f] rounded-2xl p-3 transform -translate-y-2 transition-transform animate-bounce-subtle"
+        className={`flex flex-col items-center justify-center p-3 transition-all duration-300 ${
+          isActive('/')
+            ? 'bg-[#ffe088] dark:bg-[#e9c349] text-[#00236f] rounded-2xl transform -translate-y-2 animate-bounce-subtle shadow-lg'
+            : 'text-slate-500 dark:text-slate-400 hover:text-[#00236f]'
+        }`}
         href="/"
       >
         <span className="material-symbols-outlined">home</span>
@@ -125,11 +161,15 @@ export function BottomNavBar() {
         <span className="font-manrope text-[10px] font-medium">Snip</span>
       </Link>
       <Link
-        className="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-2 hover:text-[#00236f] dark:hover:text-[#e9c349] transition-all"
-        href="#"
+        className={`flex flex-col items-center justify-center p-3 transition-all duration-300 ${
+          isActive('/history')
+            ? 'bg-[#ffe088] dark:bg-[#e9c349] text-[#00236f] rounded-2xl transform -translate-y-2 animate-bounce-subtle shadow-lg'
+            : 'text-slate-500 dark:text-slate-400 hover:text-[#00236f]'
+        }`}
+        href="/history"
       >
-        <span className="material-symbols-outlined">book</span>
-        <span className="font-manrope text-[10px] font-medium">Library</span>
+        <span className="material-symbols-outlined">history</span>
+        <span className="font-manrope text-[10px] font-medium">History</span>
       </Link>
       <Link
         className="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-2 hover:text-[#00236f] dark:hover:text-[#e9c349] transition-all"
