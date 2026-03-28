@@ -229,7 +229,6 @@ export default function Results() {
   const useSegments = results.segments.length > 0;
   const segmentCount = useSegments ? results.segments.length : results.videos.length;
   const firstConcept = results.concepts[0] ?? "Results";
-  const restConcepts = results.concepts.slice(1).join(", ");
 
   return (
     <div className="mt-8 px-6 max-w-7xl mx-auto pb-24">
@@ -241,12 +240,6 @@ export default function Results() {
           </span>
           <h2 className="text-4xl md:text-5xl font-extrabold tracking-tight text-primary leading-tight">
             {firstConcept}
-            {restConcepts && (
-              <>
-                <br />
-                <span className="text-secondary">{restConcepts}</span>
-              </>
-            )}
           </h2>
         </div>
         <div className="flex gap-4">
