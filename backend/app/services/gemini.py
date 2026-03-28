@@ -7,7 +7,7 @@ import google.generativeai as genai
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
 
 model_analyze_accurate = genai.GenerativeModel("gemini-3.1-pro-preview")
-model_analyze_fast = genai.GenerativeModel("gemini-3.1-flash-preview")
+model_analyze_fast = genai.GenerativeModel("gemini-2.5-flash")
 model_rank = genai.GenerativeModel("gemini-2.5-flash")
 
 ANALYZE_PROMPT = """Analyze this problem carefully and return a JSON object with exactly these fields:
@@ -95,7 +95,7 @@ Return ONLY valid JSON. No markdown, no extra text."""
 
 
 model_solve_accurate = genai.GenerativeModel("gemini-3.1-pro-preview")
-model_solve_fast = genai.GenerativeModel("gemini-3.1-flash-preview")
+model_solve_fast = genai.GenerativeModel("gemini-2.5-flash")
 
 SOLVE_PROMPT = """You are an expert tutor. A student has the following question:
 
