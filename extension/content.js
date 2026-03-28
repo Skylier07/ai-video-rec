@@ -17,7 +17,6 @@
   let micStream = null;
   let micAudioContext = null;
   let micProcessor = null;
-  let isSpeaking = false; // true only while speak button is held
   let playbackContext = null;
   let nextPlayTime = 0;
 
@@ -96,55 +95,6 @@ For pure casual conversation or questions you can answer directly yourself, resp
   ring.style.display = "none";
   root.appendChild(ring);
 
-  // Push-to-talk send button (manual mode only — appears above main button)
-  const speakBtn = document.createElement("button");
-  speakBtn.id = "studysnap-speak";
-  speakBtn.title = "Hold to speak — release when done";
-  speakBtn.textContent = "🎤";
-  speakBtn.style.display = "none";
-  root.appendChild(speakBtn);
-
-  // Press-and-hold PTT: activityStart on press, activityEnd on release.
-  // This narrows the mic window to exactly when the user intends to speak,
-  // so background audio/ambient sound is never captured.
-  function onSpeakStart(e) {
-    e.preventDefault();
-    if (!ws || ws.readyState !== WebSocket.OPEN || speakBtn.disabled) return;
-    pendingText = "";
-    isSpeaking = true;
-    speakBtn.textContent = "🔴";
-
-    // Capture fresh frame + open the activity window simultaneously
-    if (chrome.runtime?.id) {
-      chrome.runtime.sendMessage({ action: "captureTab" }, (response) => {
-        if (response?.dataUrl) {
-          const base64 = response.dataUrl.replace(/^data:image\/\w+;base64,/, "");
-          latestBase64 = base64;
-          ws.send(JSON.stringify({ realtimeInput: { video: { data: base64, mimeType: "image/jpeg" } } }));
-        }
-      });
-    }
-    ws.send(JSON.stringify({ realtimeInput: { activityStart: {} } }));
-    console.log("[StudySnap] activityStart sent — listening while held");
-  }
-
-  function onSpeakEnd(e) {
-    e.preventDefault();
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
-    if (!isSpeaking) return; // wasn't held
-    isSpeaking = false;
-    speakBtn.textContent = "⏳";
-    speakBtn.disabled = true;
-    ws.send(JSON.stringify({ realtimeInput: { activityEnd: {} } }));
-    console.log("[StudySnap] activityEnd sent — waiting for model response");
-  }
-
-  speakBtn.addEventListener("mousedown", onSpeakStart);
-  speakBtn.addEventListener("touchstart", onSpeakStart, { passive: false });
-  speakBtn.addEventListener("mouseup", onSpeakEnd);
-  speakBtn.addEventListener("mouseleave", onSpeakEnd);
-  speakBtn.addEventListener("touchend", onSpeakEnd, { passive: false });
-
   btn.addEventListener("click", () => {
     if (isRecording) stopMonitoring(); else startMonitoring();
   });
@@ -156,7 +106,6 @@ For pure casual conversation or questions you can answer directly yourself, resp
     btn.textContent = "■";
     btn.title = "Stop StudySnap screen monitor";
     ring.style.display = "block";
-    if (detectionMode === "manual") speakBtn.style.display = "flex";
     openWebSocket();
   }
 
@@ -165,9 +114,6 @@ For pure casual conversation or questions you can answer directly yourself, resp
     btn.textContent = "🔴";
     btn.title = "Start StudySnap screen monitor";
     ring.style.display = "none";
-    speakBtn.style.display = "none";
-    speakBtn.textContent = "🎤";
-    speakBtn.disabled = false;
     dismissToast();
     stopMicCapture();
     stopPlayback();
@@ -186,40 +132,32 @@ For pure casual conversation or questions you can answer directly yourself, resp
   }
 
   function startMicCapture() {
-    // First, enumerate devices so we can see what Chrome picked
     navigator.mediaDevices.enumerateDevices().then((devices) => {
       const mics = devices.filter(d => d.kind === "audioinput");
       console.log("[StudySnap] Available mic devices:", mics.map(d => `${d.deviceId.slice(0,8)}… ${d.label || "(no label)"}`).join(" | "));
     });
 
-    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+    // echoCancellation prevents model playback audio from re-triggering VAD
+    navigator.mediaDevices.getUserMedia({
+      audio: { echoCancellation: true, noiseSuppression: true },
+      video: false,
+    })
       .then((stream) => {
         micStream = stream;
         const track = stream.getAudioTracks()[0];
-        console.log("[StudySnap] Mic track label:", track?.label || "(no label)", "| muted:", track?.muted, "| enabled:", track?.enabled, "| readyState:", track?.readyState);
+        console.log("[StudySnap] Mic track label:", track?.label || "(no label)", "| readyState:", track?.readyState);
 
-        // Do NOT request a specific sampleRate — use whatever the system provides.
         micAudioContext = new AudioContext();
         const actualRate = micAudioContext.sampleRate;
         console.log("[StudySnap] AudioContext sampleRate:", actualRate);
 
         const source = micAudioContext.createMediaStreamSource(stream);
         micProcessor = micAudioContext.createScriptProcessor(4096, 1, 1);
-        let chunkCount = 0;
 
         micProcessor.onaudioprocess = (e) => {
+          if (!ws || ws.readyState !== WebSocket.OPEN) return;
+
           const float32Data = e.inputBuffer.getChannelData(0);
-          const peak = float32Data.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
-
-          // Log first 5 chunks regardless of isSpeaking — confirms mic is receiving signal
-          if (chunkCount < 5) {
-            console.log(`[StudySnap] Chunk ${chunkCount} peak: ${peak.toFixed(5)} (isSpeaking=${isSpeaking})`);
-          }
-          chunkCount++;
-
-          // Only send audio while the speak button is held — prevents ambient audio capture
-          if (!ws || ws.readyState !== WebSocket.OPEN || !isSpeaking) return;
-
           const int16Data = new Int16Array(float32Data.length);
           for (let i = 0; i < float32Data.length; i++) {
             int16Data[i] = Math.max(-32768, Math.min(32767, float32Data[i] * 32768));
@@ -232,7 +170,7 @@ For pure casual conversation or questions you can answer directly yourself, resp
 
         source.connect(micProcessor);
         micProcessor.connect(micAudioContext.destination);
-        console.log("[StudySnap] Mic capture started — hold speak button to talk");
+        console.log("[StudySnap] Mic capture started — speak naturally, VAD handles turn detection");
       })
       .catch((err) => {
         console.error("[StudySnap] Mic access denied:", err.message);
@@ -290,8 +228,6 @@ For pure casual conversation or questions you can answer directly yourself, resp
         setup: {
           model: "models/gemini-3.1-flash-live-preview",
           // Native audio models only support AUDIO modality — TEXT causes 1011.
-          // Both modes use AUDIO + outputAudioTranscription for text.
-          // Manual mode additionally declares the find_videos function tool.
           generationConfig: {
             responseModalities: ["AUDIO"],
             speechConfig: {
@@ -305,10 +241,8 @@ For pure casual conversation or questions you can answer directly yourself, resp
             role: "user",
           },
           ...(detectionMode === "manual" && {
-            // Disable automatic VAD so we control turn boundaries with activityStart/End
-            realtimeInputConfig: {
-              automaticActivityDetection: { disabled: true },
-            },
+            // VAD is enabled by default — server detects when the user starts/stops speaking.
+            // No activityStart/End needed; just stream mic audio continuously.
             tools: [{
               functionDeclarations: [{
                 name: "find_videos",
@@ -376,11 +310,6 @@ For pure casual conversation or questions you can answer directly yourself, resp
             if (latestBase64) showToast(question, latestBase64);
           }
         }
-        // Re-enable speak button — next activityStart fires on next button press
-        if (isRecording && detectionMode === "manual") {
-          speakBtn.textContent = "🎤";
-          speakBtn.disabled = false;
-        }
       }
 
       const content = msg.serverContent;
@@ -393,7 +322,6 @@ For pure casual conversation or questions you can answer directly yourself, resp
             const mime = part.inlineData.mimeType || "";
             console.log("[StudySnap] Audio part mimeType:", mime);
             if (mime.startsWith("audio/pcm")) {
-              // Extract sample rate from mimeType (e.g. "audio/pcm;rate=24000")
               const rateMatch = mime.match(/rate=(\d+)/);
               const sampleRate = rateMatch ? parseInt(rateMatch[1]) : 24000;
               playAudioChunk(part.inlineData.data, sampleRate);
@@ -430,12 +358,6 @@ For pure casual conversation or questions you can answer directly yourself, resp
           const question = fullText.replace("PROBLEM_DETECTED:", "").trim();
           showToast(question, latestBase64);
         }
-        // Manual mode: video trigger handled by find_videos toolCall above.
-        // Re-enable speak button — next activityStart fires on next button press.
-        if (isRecording && detectionMode === "manual") {
-          speakBtn.textContent = "🎤";
-          speakBtn.disabled = false;
-        }
       }
     };
 
@@ -448,13 +370,9 @@ For pure casual conversation or questions you can answer directly yourself, resp
       stopMicCapture();
       stopPlayback();
       if (isRecording) {
-        // Connection dropped — reset UI
         isRecording = false;
         btn.textContent = "🔴";
         ring.style.display = "none";
-        speakBtn.style.display = "none";
-        speakBtn.textContent = "🎤";
-        speakBtn.disabled = false;
       }
     };
   }
@@ -473,7 +391,6 @@ For pure casual conversation or questions you can answer directly yourself, resp
     }
     console.log("[StudySnap] Requesting frame capture...");
 
-    // Ask the background service worker to capture the visible tab
     chrome.runtime.sendMessage({ action: "captureTab" }, (response) => {
       if (chrome.runtime.lastError) {
         console.warn("[StudySnap] captureTab error:", chrome.runtime.lastError.message);

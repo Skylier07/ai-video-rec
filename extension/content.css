@@ -58,31 +58,6 @@
   }
 }
 
-/* ── Speak / send button (push-to-talk, manual mode only) ───────────────── */
-
-#studysnap-speak {
-  position: absolute;
-  bottom: 52px; /* 44px button + 8px gap */
-  left: 0;
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  background: #1a5c1a;
-  color: white;
-  border: none;
-  cursor: pointer;
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 4px 16px rgba(26, 92, 26, 0.45);
-  transition: background 0.15s;
-}
-
-#studysnap-speak:hover { background: #226022; }
-#studysnap-speak:active { background: #ba1a1a; box-shadow: 0 4px 16px rgba(186, 26, 26, 0.5); transform: scale(1.1); }
-#studysnap-speak:disabled { opacity: 0.55; cursor: default; }
-
 /* ── Problem detected toast ──────────────────────────────────────────────── */
 
 #studysnap-toast {
