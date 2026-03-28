@@ -103,14 +103,24 @@ Provide a clear, step-by-step solution. Structure your response as a JSON object
     {{
       "step_number": 1,
       "title": "Short title for this step",
-      "content": "Detailed explanation of what to do in this step. Use clear math notation where needed."
+      "content": "Detailed explanation of what to do in this step."
     }}
   ],
   "final_answer": "The final answer, stated concisely."
 }}
 
-Be thorough but concise. Each step should be a single logical action.  
-If the problem involves math, show all work.  
+Be thorough but concise. Each step should be a single logical action.
+If the problem involves math, show all work.
+
+Format ALL mathematical expressions using LaTeX delimiters:
+- Inline math (flows with surrounding text): $expression$  e.g. $x^2$, $f'(x) = 2x$
+- Display math (centered on its own line): $$expression$$  e.g. $$E = mc^2$$
+
+Format explanatory text using Markdown:
+- **bold** for key terms or important results
+- Bullet lists for sub-parts within a step
+- `inline code` for variable names or constants
+
 Return ONLY valid JSON. No markdown code blocks, no extra text."""
 
 
