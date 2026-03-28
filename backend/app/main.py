@@ -23,6 +23,9 @@ app.include_router(search_router.router)
 from app.routers import rank as rank_router
 app.include_router(rank_router.router)
 
+from app.routers import auth as auth_router
+app.include_router(auth_router.router)
+
 
 @app.get("/health")
 def health():
