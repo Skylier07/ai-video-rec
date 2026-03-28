@@ -26,6 +26,9 @@ app.include_router(rank_router.router)
 from app.routers import auth as auth_router
 app.include_router(auth_router.router)
 
+from app.routers import history as history_router
+app.include_router(history_router.router)
+
 
 @app.get("/health")
 def health():
