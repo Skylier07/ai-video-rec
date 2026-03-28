@@ -96,10 +96,10 @@ If no question is visible when they ask for videos, say: "I don't see a question
   speakBtn.addEventListener("click", () => {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     pendingText = "";
-    ws.send(JSON.stringify({ clientContent: { turnComplete: true } }));
+    ws.send(JSON.stringify({ realtimeInput: { activityEnd: {} } }));
     speakBtn.textContent = "⏳";
     speakBtn.disabled = true;
-    console.log("[StudySnap] Turn complete sent — waiting for model response");
+    console.log("[StudySnap] activityEnd sent — waiting for model response");
   });
 
   btn.addEventListener("click", () => {
@@ -166,6 +166,11 @@ If no question is visible when they ask for videos, say: "I don't see a question
         source.connect(micProcessor);
         micProcessor.connect(micAudioContext.destination);
         console.log("[StudySnap] Mic capture started");
+        // Signal to model that user activity is beginning (VAD disabled — manual control)
+        if (ws && ws.readyState === WebSocket.OPEN) {
+          ws.send(JSON.stringify({ realtimeInput: { activityStart: {} } }));
+          console.log("[StudySnap] activityStart sent");
+        }
       })
       .catch((err) => {
         console.error("[StudySnap] Mic access denied:", err.message);
@@ -234,6 +239,10 @@ If no question is visible when they ask for videos, say: "I don't see a question
             role: "user",
           },
           ...(detectionMode === "manual" && {
+            // Disable VAD so we control turn boundaries with activityStart/End
+            realtimeSpeechConfig: {
+              voiceActivityDetection: { disabled: true },
+            },
             tools: [{
               functionDeclarations: [{
                 name: "find_videos",
@@ -301,10 +310,14 @@ If no question is visible when they ask for videos, say: "I don't see a question
             if (latestBase64) showToast(question, latestBase64);
           }
         }
-        // Re-enable speak button now that model has responded
+        // Re-enable speak button and open next activity window
         if (isRecording && detectionMode === "manual") {
           speakBtn.textContent = "🎤";
           speakBtn.disabled = false;
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ realtimeInput: { activityStart: {} } }));
+            console.log("[StudySnap] activityStart sent — ready for next question");
+          }
         }
       }
 
@@ -345,10 +358,14 @@ If no question is visible when they ask for videos, say: "I don't see a question
           showToast(question, latestBase64);
         }
         // Manual mode: video trigger handled by find_videos toolCall above.
-        // Re-enable speak button after any model turn (e.g. casual responses).
+        // Re-enable speak button and open next activity window.
         if (isRecording && detectionMode === "manual") {
           speakBtn.textContent = "🎤";
           speakBtn.disabled = false;
+          if (ws && ws.readyState === WebSocket.OPEN) {
+            ws.send(JSON.stringify({ realtimeInput: { activityStart: {} } }));
+            console.log("[StudySnap] activityStart sent — ready for next question");
+          }
         }
       }
     };
