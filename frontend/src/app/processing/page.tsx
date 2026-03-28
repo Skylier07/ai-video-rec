@@ -6,7 +6,7 @@ import type { StudySnapInput, StudySnapResults } from "@/types";
 import { analyzeQuestion, searchVideos, rankSegments } from "@/lib/api";
 
 const STEPS = [
-  { label: "Analyzing problem...", sub: "Step 1 of 3: Deep OCR Scanning", toast: "Analyzing your question..." },
+  { label: "Analyzing problem...", sub: "Step 1 of 3: Gemini Vision", toast: "Analyzing your question..." },
   { label: "Finding relevant videos...", sub: "Step 2 of 3: YouTube Search", toast: "Searching YouTube..." },
   { label: "Identifying key moments...", sub: "Step 3 of 3: Ranking Segments", toast: "Ranking video segments..." },
 ] as const;

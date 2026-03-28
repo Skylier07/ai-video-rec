@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { GoogleGenAI, Modality } from "@google/genai";
+import { GoogleGenAI, Modality, type Session, type LiveServerMessage } from "@google/genai";
 
 const SYSTEM_INSTRUCTION = `You are a homework problem detector. You receive frames from a student's screen.
 
@@ -15,11 +15,6 @@ Your ONLY job:
 
 const CAPTURE_INTERVAL_MS = 5000;
 
-type LiveSession = {
-  sendRealtimeInput: (input: unknown) => void;
-  close: () => void;
-};
-
 export default function ScreenRecorder() {
   const router = useRouter();
   const [isRecording, setIsRecording] = useState(false);
@@ -27,11 +22,13 @@ export default function ScreenRecorder() {
 
   const streamRef = useRef<MediaStream | null>(null);
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const sessionRef = useRef<LiveSession | null>(null);
+  const sessionRef = useRef<Session | null>(null);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const isRecordingRef = useRef(false);
   const latestBase64Ref = useRef<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Accumulate streamed text across partial onmessage calls
+  const pendingTextRef = useRef("");
 
   useEffect(() => {
     isRecordingRef.current = isRecording;
@@ -54,6 +51,7 @@ export default function ScreenRecorder() {
     setIsRecording(false);
     setToast(null);
     latestBase64Ref.current = null;
+    pendingTextRef.current = "";
   }, []);
 
   const captureFrame = useCallback((): string | null => {
@@ -66,8 +64,7 @@ export default function ScreenRecorder() {
     const ctx = canvas.getContext("2d");
     if (!ctx) return null;
     ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-    const dataUrl = canvas.toDataURL("image/jpeg", 0.7);
-    return dataUrl.split(",")[1];
+    return canvas.toDataURL("image/jpeg", 0.7).split(",")[1];
   }, []);
 
   const sendFrame = useCallback(() => {
@@ -75,9 +72,10 @@ export default function ScreenRecorder() {
     const base64 = captureFrame();
     if (!base64) return;
     latestBase64Ref.current = base64;
+    pendingTextRef.current = ""; // reset accumulator for fresh response
 
     sessionRef.current.sendRealtimeInput({
-      media_chunks: [{ data: base64, mime_type: "image/jpeg" }],
+      video: { data: base64, mimeType: "image/jpeg" },
     });
   }, [captureFrame]);
 
@@ -98,28 +96,40 @@ export default function ScreenRecorder() {
       const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY ?? "";
       const genAI = new GoogleGenAI({ apiKey });
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const session = await (genAI.live as any).connect({
+      const session = await genAI.live.connect({
         model: "gemini-2.0-flash-live-001",
         config: {
           responseModalities: [Modality.TEXT],
-          systemInstruction: { parts: [{ text: SYSTEM_INSTRUCTION }] },
+          systemInstruction: SYSTEM_INSTRUCTION,
         },
         callbacks: {
           onopen: () => setIsRecording(true),
-          onmessage: (message: { serverContent?: { modelTurn?: { parts?: Array<{ text?: string }> } } }) => {
-            const text = message.serverContent?.modelTurn?.parts?.[0]?.text ?? "";
-            if (text.startsWith("PROBLEM_DETECTED:") && latestBase64Ref.current) {
-              const question = text.replace("PROBLEM_DETECTED:", "").trim();
-              setToast({ question, imageBase64: latestBase64Ref.current });
+          onmessage: (message: LiveServerMessage) => {
+            const content = message.serverContent;
+            if (!content) return;
+
+            // Accumulate text from all parts (model streams incrementally)
+            const parts = content.modelTurn?.parts ?? [];
+            for (const part of parts) {
+              if (part.text) pendingTextRef.current += part.text;
+            }
+
+            // Only act when the turn is complete
+            if (content.turnComplete && latestBase64Ref.current) {
+              const fullText = pendingTextRef.current.trim();
+              pendingTextRef.current = "";
+              if (fullText.startsWith("PROBLEM_DETECTED:")) {
+                const question = fullText.replace("PROBLEM_DETECTED:", "").trim();
+                setToast({ question, imageBase64: latestBase64Ref.current });
+              }
             }
           },
-          onerror: (err: unknown) => console.error("Live API error:", err),
-          onclose: () => { if (isRecordingRef.current) stopRecording(); },
+          onerror: (e: ErrorEvent) => console.error("Live API error:", e.message),
+          onclose: (_e: CloseEvent) => { if (isRecordingRef.current) stopRecording(); },
         },
       });
 
-      sessionRef.current = session as LiveSession;
+      sessionRef.current = session;
       intervalRef.current = setInterval(sendFrame, CAPTURE_INTERVAL_MS);
       setTimeout(sendFrame, 500);
     } catch (err) {
