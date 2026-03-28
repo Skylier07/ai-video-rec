@@ -31,11 +31,11 @@ Your ONLY job:
 
   const SYSTEM_INSTRUCTION_MANUAL = `You are a friendly study assistant. You can see the student's screen and hear them speak.
 
-When the student asks you to find videos, help explain a concept, or requests assistance with a problem on their screen:
-1. Respond naturally and briefly (e.g. "Sure, finding videos on that now!")
-2. Include this signal in your response: FIND_VIDEOS: [the exact question text you see on screen]
+When the student asks you to find videos, search for help, or requests assistance with a problem on their screen:
+1. Call the find_videos function with the exact question text you can see on screen.
+2. Also respond naturally and briefly (e.g. "Sure, finding videos on that now!").
 
-For casual conversation or questions you can answer directly, respond helpfully without the FIND_VIDEOS signal.
+For casual conversation or questions you can answer directly, respond helpfully without calling find_videos.
 If no question is visible when they ask for videos, say: "I don't see a question on screen yet — can you point me to it?"`;
 
   const WS_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
@@ -201,17 +201,35 @@ If no question is visible when they ask for videos, say: "I don't see a question
       const setupMsg = {
         setup: {
           model: "models/gemini-3.1-flash-live-preview",
-          // Manual mode: TEXT only — AUDIO+TEXT causes 1011 on this model.
-          // VAD still works with TEXT; FIND_VIDEOS signal reliably appears in modelTurn.parts[].text.
-          // Auto mode: AUDIO + transcription (existing behaviour).
+          // Native audio models only support AUDIO modality — TEXT causes 1011.
+          // Both modes use AUDIO + outputAudioTranscription for text.
+          // Manual mode additionally declares the find_videos function tool.
           generationConfig: {
-            responseModalities: detectionMode === "manual" ? ["TEXT"] : ["AUDIO"],
+            responseModalities: ["AUDIO"],
           },
-          ...(detectionMode !== "manual" && { outputAudioTranscription: {} }),
+          outputAudioTranscription: {},
           systemInstruction: {
             parts: [{ text: detectionMode === "manual" ? SYSTEM_INSTRUCTION_MANUAL : SYSTEM_INSTRUCTION_AUTO }],
             role: "user",
           },
+          ...(detectionMode === "manual" && {
+            tools: [{
+              functionDeclarations: [{
+                name: "find_videos",
+                description: "Trigger a video search for the homework problem currently visible on the student's screen.",
+                parameters: {
+                  type: "object",
+                  properties: {
+                    question: {
+                      type: "string",
+                      description: "The exact question text visible on screen.",
+                    },
+                  },
+                  required: ["question"],
+                },
+              }],
+            }],
+          }),
         },
       };
       ws.send(JSON.stringify(setupMsg));
@@ -241,6 +259,27 @@ If no question is visible when they ask for videos, say: "I don't see a question
       const keys = Object.keys(msg);
       if (!keys.includes("serverContent")) {
         console.log("[StudySnap] Non-content message:", JSON.stringify(msg).slice(0, 200));
+      }
+
+      // ── Tool calls (top-level, NOT inside serverContent) ───────────────────
+      if (msg.toolCall?.functionCalls) {
+        for (const call of msg.toolCall.functionCalls) {
+          if (call.name === "find_videos") {
+            const question = call.args?.question || "";
+            console.log("[StudySnap] find_videos called with:", question);
+            // Live API requires a toolResponse to continue the session
+            ws.send(JSON.stringify({
+              toolResponse: {
+                functionResponses: [{
+                  id: call.id,
+                  name: call.name,
+                  response: { status: "searching" },
+                }],
+              },
+            }));
+            if (latestBase64) showToast(question, latestBase64);
+          }
+        }
       }
 
       const content = msg.serverContent;
@@ -278,12 +317,8 @@ If no question is visible when they ask for videos, say: "I don't see a question
         if (detectionMode === "auto" && fullText.startsWith("PROBLEM_DETECTED:") && latestBase64) {
           const question = fullText.replace("PROBLEM_DETECTED:", "").trim();
           showToast(question, latestBase64);
-        } else if (detectionMode === "manual" && latestBase64) {
-          // TEXT modality: signal comes through modelTurn.parts[].text reliably
-          // Transcription fallback: outputTranscription.text (less reliable for exact format)
-          const match = fullText.match(/FIND_VIDEOS:\s*(.+)/si);
-          if (match) showToast(match[1].trim(), latestBase64);
         }
+        // Manual mode: video trigger handled by find_videos toolCall above
       }
     };
 
