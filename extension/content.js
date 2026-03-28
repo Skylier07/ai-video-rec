@@ -14,8 +14,13 @@
   let latestBase64 = null;
   let toastEl = null;
   let toastTimer = null;
+  let micStream = null;
+  let micAudioContext = null;
+  let micProcessor = null;
+  let playbackContext = null;
+  let nextPlayTime = 0;
 
-  const SYSTEM_INSTRUCTION = `You are a homework problem detector. You receive frames from a student's screen.
+  const SYSTEM_INSTRUCTION_AUTO = `You are a homework problem detector. You receive frames from a student's screen.
 
 Your ONLY job:
 - If you can clearly see a homework question, math problem, or exam question being displayed, respond with EXACTLY:
@@ -24,8 +29,32 @@ Your ONLY job:
   NO_PROBLEM
 - Never add any other text, explanation, or commentary.`;
 
+  const SYSTEM_INSTRUCTION_MANUAL = `You are a friendly study assistant. You can see the student's screen and hear them speak.
+
+When the student asks you to find videos, help explain a concept, or requests assistance with a problem on their screen:
+1. Respond naturally and briefly (e.g. "Sure, finding videos on that now!")
+2. Include this signal in your response: FIND_VIDEOS: [the exact question text you see on screen]
+
+For casual conversation or questions you can answer directly, respond helpfully without the FIND_VIDEOS signal.
+If no question is visible when they ask for videos, say: "I don't see a question on screen yet — can you point me to it?"`;
+
   const WS_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
   const CAPTURE_INTERVAL_MS = 5000;
+
+  // ── Detection mode (auto | manual) ───────────────────────────────────────
+  let detectionMode = "auto";
+
+  chrome.storage.local.get({ detection_mode: "auto" }, (result) => {
+    detectionMode = result.detection_mode;
+  });
+
+  window.addEventListener("message", (event) => {
+    if (event.source !== window) return;
+    if (event.data?.type === "STUDYSNAP_SET_DETECTION_MODE") {
+      detectionMode = event.data.mode;
+      chrome.storage.local.set({ detection_mode: event.data.mode });
+    }
+  });
 
   // ── Root container ────────────────────────────────────────────────────────
 
@@ -66,7 +95,87 @@ Your ONLY job:
     btn.title = "Start StudySnap screen monitor";
     ring.style.display = "none";
     dismissToast();
+    stopMicCapture();
+    stopPlayback();
     cleanup();
+  }
+
+  // ── Audio helpers ─────────────────────────────────────────────────────────
+
+  function arrayBufferToBase64(buffer) {
+    let binary = "";
+    const bytes = new Uint8Array(buffer);
+    for (let i = 0; i < bytes.byteLength; i++) {
+      binary += String.fromCharCode(bytes[i]);
+    }
+    return btoa(binary);
+  }
+
+  function startMicCapture() {
+    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+      .then((stream) => {
+        micStream = stream;
+        micAudioContext = new AudioContext({ sampleRate: 16000 });
+        const source = micAudioContext.createMediaStreamSource(stream);
+        micProcessor = micAudioContext.createScriptProcessor(2048, 1, 1);
+
+        micProcessor.onaudioprocess = (e) => {
+          if (!ws || ws.readyState !== WebSocket.OPEN) return;
+          const float32Data = e.inputBuffer.getChannelData(0);
+          const int16Data = new Int16Array(float32Data.length);
+          for (let i = 0; i < float32Data.length; i++) {
+            int16Data[i] = Math.max(-32768, Math.min(32767, float32Data[i] * 32768));
+          }
+          const base64 = arrayBufferToBase64(int16Data.buffer);
+          ws.send(JSON.stringify({
+            realtimeInput: { audio: { data: base64, mimeType: "audio/pcm;rate=16000" } },
+          }));
+        };
+
+        source.connect(micProcessor);
+        micProcessor.connect(micAudioContext.destination);
+        console.log("[StudySnap] Mic capture started");
+      })
+      .catch((err) => {
+        console.error("[StudySnap] Mic access denied:", err.message);
+      });
+  }
+
+  function stopMicCapture() {
+    if (micProcessor) { micProcessor.disconnect(); micProcessor = null; }
+    if (micAudioContext) { micAudioContext.close(); micAudioContext = null; }
+    if (micStream) { micStream.getTracks().forEach((t) => t.stop()); micStream = null; }
+    console.log("[StudySnap] Mic capture stopped");
+  }
+
+  function playAudioChunk(base64Data) {
+    if (!playbackContext) {
+      playbackContext = new AudioContext({ sampleRate: 24000 });
+      nextPlayTime = 0;
+    }
+    const binaryString = atob(base64Data);
+    const bytes = new Uint8Array(binaryString.length);
+    for (let i = 0; i < binaryString.length; i++) {
+      bytes[i] = binaryString.charCodeAt(i);
+    }
+    const int16Array = new Int16Array(bytes.buffer);
+    const float32Array = new Float32Array(int16Array.length);
+    for (let i = 0; i < int16Array.length; i++) {
+      float32Array[i] = int16Array[i] / 32768.0;
+    }
+    const audioBuffer = playbackContext.createBuffer(1, float32Array.length, 24000);
+    audioBuffer.getChannelData(0).set(float32Array);
+    const source = playbackContext.createBufferSource();
+    source.buffer = audioBuffer;
+    source.connect(playbackContext.destination);
+    const startTime = Math.max(playbackContext.currentTime, nextPlayTime);
+    source.start(startTime);
+    nextPlayTime = startTime + audioBuffer.duration;
+  }
+
+  function stopPlayback() {
+    if (playbackContext) { playbackContext.close(); playbackContext = null; }
+    nextPlayTime = 0;
   }
 
   // ── Gemini Live API WebSocket ─────────────────────────────────────────────
@@ -79,20 +188,27 @@ Your ONLY job:
 
     ws.onopen = () => {
       console.log("[StudySnap] WS connected");
-      ws.send(JSON.stringify({
+      const setupMsg = {
         setup: {
           model: "models/gemini-3.1-flash-live-preview",
           generationConfig: { responseModalities: ["AUDIO"] },
           outputAudioTranscription: {},
           systemInstruction: {
-            parts: [{ text: SYSTEM_INSTRUCTION }],
+            parts: [{ text: detectionMode === "manual" ? SYSTEM_INSTRUCTION_MANUAL : SYSTEM_INSTRUCTION_AUTO }],
             role: "user",
           },
         },
-      }));
+      };
+      if (detectionMode === "manual") {
+        setupMsg.setup.inputAudioTranscription = {};
+      }
+      ws.send(JSON.stringify(setupMsg));
 
       captureInterval = setInterval(captureAndSend, CAPTURE_INTERVAL_MS);
       setTimeout(captureAndSend, 800);
+      if (detectionMode === "manual") {
+        startMicCapture();
+      }
     };
 
     ws.onmessage = async (event) => {
@@ -118,6 +234,15 @@ Your ONLY job:
       const content = msg.serverContent;
       if (!content) return;
 
+      // Play Gemini's audio response (manual mode only)
+      if (detectionMode === "manual" && content.modelTurn?.parts) {
+        for (const part of content.modelTurn.parts) {
+          if (part.inlineData?.mimeType === "audio/pcm;rate=24000") {
+            playAudioChunk(part.inlineData.data);
+          }
+        }
+      }
+
       if (content.outputTranscription?.text) {
         pendingText += content.outputTranscription.text;
         console.log("[StudySnap] Transcription chunk:", content.outputTranscription.text);
@@ -137,9 +262,13 @@ Your ONLY job:
         const fullText = pendingText.trim();
         pendingText = "";
         console.log("[StudySnap] Turn complete. Full response:", JSON.stringify(fullText));
-        if (fullText.startsWith("PROBLEM_DETECTED:") && latestBase64) {
+
+        if (detectionMode === "auto" && fullText.startsWith("PROBLEM_DETECTED:") && latestBase64) {
           const question = fullText.replace("PROBLEM_DETECTED:", "").trim();
           showToast(question, latestBase64);
+        } else if (detectionMode === "manual" && fullText.includes("FIND_VIDEOS:") && latestBase64) {
+          const match = fullText.match(/FIND_VIDEOS:\s*(.+)/s);
+          if (match) showToast(match[1].trim(), latestBase64);
         }
       }
     };
@@ -189,12 +318,12 @@ Your ONLY job:
       latestBase64 = base64;
       pendingText = "";
 
-      ws.send(JSON.stringify({
-        realtimeInput: {
-          video: { data: base64, mimeType: "image/jpeg" },
-          text: "Analyze this screen.",
-        },
-      }));
+      // Auto mode: include text prompt to trigger per-frame analysis.
+      // Manual mode: video only — Gemini responds to voice, not each frame.
+      const frameMsg = detectionMode === "manual"
+        ? { realtimeInput: { video: { data: base64, mimeType: "image/jpeg" } } }
+        : { realtimeInput: { video: { data: base64, mimeType: "image/jpeg" }, text: "Analyze this screen." } };
+      ws.send(JSON.stringify(frameMsg));
     });
   }
 
