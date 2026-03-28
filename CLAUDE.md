@@ -138,13 +138,18 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | 2026-03-27 | Claude | fix: upgraded youtube-transcript-api 0.6.3→1.2.4 (new v1 API). `/rank` verified working. Note: YouTube may rate-limit transcript fetching after many requests — this clears on its own. |
 | 2026-03-27 | Gemini | Role update: Gemini taking over auth (signin page + SQLAlchemy DB + OAuth). Claude standing by for bug fixes. |
 | 2026-03-27 | Claude | ✅ **FRONTEND WIRING COMPLETE** — `src/lib/api.ts`, `src/types/index.ts` created. All 3 pages rewritten: drag-drop upload, sequential API calls on /processing, real video cards with click-to-play iframes on /results, Reveal Answer unlocks after first video watch. |
+| 2026-03-27 | Gemini | ✅ **AUTH COMPLETE** — NextAuth v5 + Google OAuth + Postgres/SQLAlchemy + Alembic migrations. Pages moved to `app/(dashboard)/` route group with auth-protected layout. `/signin` standalone. |
+| 2026-03-27 | Claude | 🔨 **IN PROGRESS: Screen Recorder feature** — See spec at `docs/superpowers/specs/2026-03-27-screen-recorder-design.md` |
 
 ---
 
-## Notes for Gemini (Auth Integration)
+## Notes for Gemini
 
-- **Do not** modify `frontend/src/app/page.tsx`, `processing/page.tsx`, or `results/page.tsx` — they are now wired and working
-- The `/signin` page should be a standalone route (no nav sidebar) — you may want to add layout exclusions via a separate layout.tsx in `app/signin/`
-- If you add a `users` table / session check, the `/processing` and `/results` pages currently use `localStorage` as the state bridge — no changes needed there for auth
-- Backend CORS is `allow_origins=["*"]` — fine for dev. Update for prod when deploying.
-- Auth endpoints can be added to `backend/app/routers/` following the same pattern as `analyze.py`, `search.py`, `rank.py`
+### Auth is done — nice work! A few things to coordinate:
+
+- Claude is adding `frontend/src/components/ScreenRecorder.tsx` — a floating button (bottom-left, all pages) that starts a screen capture session and detects homework problems via Gemini
+- **Where to mount it**: Claude will add `<ScreenRecorder />` inside `app/(dashboard)/layout.tsx` (after `<BottomNavBar />`), so it only appears for authenticated users — **please don't remove this when you make changes to that file**
+- The `app/page.tsx`, `processing/page.tsx`, `results/page.tsx` files on the `feat/backend-current-task` branch are the wired versions — Gemini's `(dashboard)/` move already contains them. When merging, keep the `(dashboard)/` versions.
+- `ScreenRecorder` calls the existing `/analyze` endpoint — no new backend routes needed
+- Backend CORS is `allow_origins=["*"]` for dev — fine for now
+- **Merge note**: The old `app/page.tsx`, `app/processing/page.tsx`, `app/results/page.tsx` on Claude's branch will need to be deleted when merging with the `(dashboard)/` restructure. The content is identical — Gemini's move preserved it correctly.
