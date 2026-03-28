@@ -1,13 +1,9 @@
 // StudySnap Extension — Service Worker
-// Orchestrates tab capture, offscreen document lifecycle, and tab opening.
+// Orchestrates offscreen lifecycle, tab capture, and opening StudySnap.
 
 const OFFSCREEN_URL = chrome.runtime.getURL("offscreen.html");
 
-// Track which tab is being monitored
-let activeTabId = null;
-let activeWindowId = null;
-
-// ── Offscreen document helpers ──────────────────────────────────────────────
+// ── Offscreen helpers ────────────────────────────────────────────────────────
 
 async function ensureOffscreen() {
   const existing = await chrome.offscreen.hasDocument();
@@ -15,7 +11,7 @@ async function ensureOffscreen() {
     await chrome.offscreen.createDocument({
       url: OFFSCREEN_URL,
       reasons: ["USER_MEDIA"],
-      justification: "Run Gemini Live API WebSocket and frame capture timer",
+      justification: "Gemini Live API WebSocket + frame capture timer",
     });
   }
 }
@@ -28,63 +24,76 @@ async function closeOffscreen() {
 // ── Message handler ──────────────────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+
+  // ── Start monitoring ──────────────────────────────────────────────────────
   if (msg.action === "start") {
-    handleStart(sender.tab).then(() => sendResponse({ ok: true }));
+    const tabId = sender.tab?.id;
+    if (!tabId) { sendResponse({ ok: false }); return; }
+
+    // Persist tab ID to session storage — survives service worker restarts
+    chrome.storage.session.set({ activeTabId: tabId }, async () => {
+      await ensureOffscreen();
+      // Offscreen will send "offscreenReady" when its listener is registered.
+      // We'll respond to that instead of a fixed delay — no race condition.
+      sendResponse({ ok: true });
+    });
     return true; // async
   }
 
-  if (msg.action === "stop") {
-    handleStop().then(() => sendResponse({ ok: true }));
-    return true;
+  // ── Offscreen doc is ready — send init data ───────────────────────────────
+  if (msg.action === "offscreenReady") {
+    chrome.storage.session.get(["activeTabId"], ({ activeTabId }) => {
+      if (activeTabId) {
+        chrome.runtime.sendMessage({ action: "init", tabId: activeTabId })
+          .catch(() => {}); // offscreen receives this
+      }
+    });
   }
 
+  // ── Capture current visible tab (called by offscreen timer) ──────────────
   if (msg.action === "captureTab") {
-    // Offscreen doc asking for a frame from the monitored tab
+    // captureVisibleTab() with no windowId = captures currently active tab.
+    // This is actually what we want: capture whatever the student is looking at.
     chrome.tabs.captureVisibleTab(
-      activeWindowId,
+      null, // current focused window's active tab
       { format: "jpeg", quality: 70 },
       (dataUrl) => {
-        if (chrome.runtime.lastError || !dataUrl) return;
-        chrome.runtime.sendMessage({ action: "frame", dataUrl });
+        if (chrome.runtime.lastError || !dataUrl) {
+          sendResponse({ error: true });
+          return;
+        }
+        // Send frame ONLY back to the requester (offscreen) via response —
+        // avoids broadcasting base64 frame data to all content scripts.
+        sendResponse({ dataUrl });
       }
     );
+    return true; // REQUIRED: async callback
   }
 
+  // ── Problem detected — tell the content script to show toast ─────────────
   if (msg.action === "problemDetected") {
-    // Forward to the content script on the monitored tab
-    if (activeTabId) {
+    chrome.storage.session.get(["activeTabId"], ({ activeTabId }) => {
+      if (!activeTabId) return;
       chrome.tabs.sendMessage(activeTabId, {
         action: "showToast",
         question: msg.question,
         imageBase64: msg.imageBase64,
-      });
-    }
+      }).catch(() => {}); // tab may have navigated away
+    });
   }
 
+  // ── Open StudySnap processing page ───────────────────────────────────────
   if (msg.action === "findVideos") {
     handleFindVideos(msg.imageBase64).then(() => sendResponse({ ok: true }));
     return true;
   }
+
+  // ── Stop monitoring ───────────────────────────────────────────────────────
+  if (msg.action === "stop") {
+    handleStop().then(() => sendResponse({ ok: true }));
+    return true;
+  }
 });
-
-// ── Start ────────────────────────────────────────────────────────────────────
-
-async function handleStart(tab) {
-  if (!tab) return;
-  activeTabId = tab.id;
-  activeWindowId = tab.windowId;
-
-  await ensureOffscreen();
-
-  // Give offscreen doc a moment to load, then init
-  setTimeout(() => {
-    chrome.runtime.sendMessage({
-      action: "init",
-      tabId: activeTabId,
-      windowId: activeWindowId,
-    });
-  }, 300);
-}
 
 // ── Stop ─────────────────────────────────────────────────────────────────────
 
@@ -92,8 +101,7 @@ async function handleStop() {
   chrome.runtime.sendMessage({ action: "stop" }).catch(() => {});
   await new Promise((r) => setTimeout(r, 200));
   await closeOffscreen();
-  activeTabId = null;
-  activeWindowId = null;
+  await chrome.storage.session.remove(["activeTabId"]);
 }
 
 // ── Find Videos ──────────────────────────────────────────────────────────────
@@ -105,16 +113,11 @@ async function handleFindVideos(imageBase64) {
     text: null,
   };
 
-  // Store so the processing page can pick it up
-  await chrome.storage.local.set({ studysnap_input: data });
+  await chrome.storage.session.set({ studysnap_input: data });
 
-  // Get the StudySnap URL from the content script's config (injected)
-  // Fall back to localhost:3000 if not available
-  const url = "http://localhost:3000/processing";
+  const tab = await chrome.tabs.create({ url: "http://localhost:3000/processing" });
 
-  const tab = await chrome.tabs.create({ url });
-
-  // Once the page has loaded, inject localStorage bridge
+  // Once the page has fully loaded, bridge the data into its localStorage
   const listener = (tabId, info) => {
     if (tabId !== tab.id || info.status !== "complete") return;
     chrome.tabs.onUpdated.removeListener(listener);

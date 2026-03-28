@@ -1,5 +1,6 @@
 // StudySnap Extension — Offscreen Document
 // Manages the 5s capture timer and the Gemini Live API WebSocket.
+// Lives persistently while monitoring is active (unlike the service worker).
 
 const SYSTEM_INSTRUCTION = `You are a homework problem detector. You receive frames from a student's screen.
 
@@ -17,26 +18,24 @@ let ws = null;
 let captureInterval = null;
 let pendingText = "";
 let latestBase64 = null;
-let targetTabId = null;
-let targetWindowId = null;
 
 // ── Message handler ──────────────────────────────────────────────────────────
 
 chrome.runtime.onMessage.addListener((msg) => {
   if (msg.action === "init") {
-    targetTabId = msg.tabId;
-    targetWindowId = msg.windowId;
+    console.log("[StudySnap offscreen] init received, starting WS");
     startWebSocket();
-  }
-
-  if (msg.action === "frame") {
-    handleFrame(msg.dataUrl);
   }
 
   if (msg.action === "stop") {
     cleanup();
   }
+  // Note: "frame" messages no longer used — frames come back via sendResponse
+  // in the "captureTab" request/response cycle.
 });
+
+// ── Signal to background that listener is registered and we're ready ─────────
+chrome.runtime.sendMessage({ action: "offscreenReady" }).catch(() => {});
 
 // ── WebSocket ─────────────────────────────────────────────────────────────────
 
@@ -48,7 +47,7 @@ function startWebSocket() {
 
   ws.onopen = () => {
     console.log("[StudySnap] WS connected");
-    // Send setup message
+
     ws.send(JSON.stringify({
       setup: {
         model: "models/gemini-3.1-flash-live-preview",
@@ -63,10 +62,9 @@ function startWebSocket() {
       },
     }));
 
-    // Start capture loop
-    captureInterval = setInterval(requestCapture, CAPTURE_INTERVAL_MS);
-    // First capture shortly after connect
-    setTimeout(requestCapture, 500);
+    // Start capture loop after WS is open
+    captureInterval = setInterval(captureAndSend, CAPTURE_INTERVAL_MS);
+    setTimeout(captureAndSend, 800); // first frame shortly after connect
   };
 
   ws.onmessage = (event) => {
@@ -83,13 +81,14 @@ function startWebSocket() {
     if (content.turnComplete && latestBase64) {
       const fullText = pendingText.trim();
       pendingText = "";
+      console.log("[StudySnap] Model response:", fullText);
       if (fullText.startsWith("PROBLEM_DETECTED:")) {
         const question = fullText.replace("PROBLEM_DETECTED:", "").trim();
         chrome.runtime.sendMessage({
           action: "problemDetected",
           question,
           imageBase64: latestBase64,
-        });
+        }).catch(() => {});
       }
     }
   };
@@ -107,16 +106,24 @@ function startWebSocket() {
 
 // ── Frame capture ─────────────────────────────────────────────────────────────
 
-function requestCapture() {
+function captureAndSend() {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
-  // Ask background to capture the monitored tab
-  chrome.runtime.sendMessage({ action: "captureTab", tabId: targetTabId, windowId: targetWindowId });
+
+  // Ask background to capture via sendMessage + response (frame only goes to us)
+  chrome.runtime.sendMessage({ action: "captureTab" }, (response) => {
+    if (chrome.runtime.lastError || !response?.dataUrl) {
+      console.warn("[StudySnap] captureTab failed:", chrome.runtime.lastError?.message);
+      return;
+    }
+    sendFrame(response.dataUrl);
+  });
 }
 
-function handleFrame(dataUrl) {
+function sendFrame(dataUrl) {
   if (!ws || ws.readyState !== WebSocket.OPEN) return;
-  // Strip the data URL prefix
-  const base64 = dataUrl.replace(/^data:image\/jpeg;base64,/, "");
+
+  // Strip data URL prefix → raw base64
+  const base64 = dataUrl.replace(/^data:image\/\w+;base64,/, "");
   latestBase64 = base64;
   pendingText = "";
 
@@ -139,4 +146,5 @@ function cleanup() {
   }
   pendingText = "";
   latestBase64 = null;
+  console.log("[StudySnap] Monitoring stopped");
 }
