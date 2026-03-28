@@ -7,7 +7,7 @@ import google.generativeai as genai
 genai.configure(api_key=os.environ.get("GEMINI_API_KEY", ""))
 
 model_analyze = genai.GenerativeModel("gemini-2.5-pro")
-model_rank = genai.GenerativeModel("gemini-2.0-flash")
+model_rank = genai.GenerativeModel("gemini-2.5-flash")
 
 ANALYZE_PROMPT = """Analyze this problem carefully and return a JSON object with exactly these fields:
     - "question": the exact question being asked, as clean readable text (no LaTeX unless necessary)

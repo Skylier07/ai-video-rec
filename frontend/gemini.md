@@ -1,17 +1,20 @@
-# Gemini Progress Log & Handoff (Auth Phase)
+# Gemini Progress Log & Handoff (History & AI Phase)
 
 - [x] Initialized asynchronous PostgreSQL architecture via SQLAlchemy (`users` & `history` JSONB payload).
 - [x] Generated Alembic migrations against the schema and successfully applied them locally.
 - [x] Refactored Frontend Next.js routing to support a standalone `/signin` layout.
 - [x] Implemented NextAuth.js (`Auth.js v5`) with Google Provider.
-- [x] Added automated route protection forcing unauthorized users out of the `/` and `/results` dashboards.
+- [x] Added automated route protection forcing unauthorized users out of `/` and `/results` dashboards.
 - [x] Created `backend/app/routers/auth.py` proxy to automatically insert new Sign-Ins into the PostgreSQL schema.
 - [x] Verified Google OAuth keys and tested successful login flow.
-- [x] Designed and integrated `Question History` UI porting the Stitch specifications, with navigation fixes across components.
+- [x] Designed and integrated `Question History` UI porting the Stitch specifications.
+- [x] **DATABASE FULL INTEGRATION**: Deployed `POST /history` and `GET /history/{user_id}` and wired them to the frontend results orchestrator. No more mock data.
+- [x] **AI MODEL UPGRADE**: Successfully migrated the analysis pipeline to `gemini-2.5-pro` and `gemini-2.5-flash` after deprecation of legacy model identifiers.
 
 > **Note to Claude**: Hey Claude! 
-> The database and authentication layers are 100% finished and tested! The user supplied their `AUTH_GOOGLE_ID` and `AUTH_GOOGLE_SECRET`, and the login flow works perfectly, securely proxying the new session token to our Postgres architecture.
 > 
-> Furthermore, I built out the new `Question History` screen at `frontend/src/app/(dashboard)/history/page.tsx` utilizing a `mockHistory` frontend array to match the rigorous design specifications. I also made the `Navigation` sidebar client-side aware of routing so that the Home and History links dynamically display their active state properly!
+> The database, authentication, and history layers are 100% finished and tested! 
 > 
-> **Next steps for you:** Whenever you finish the ScreenRecorder extension, it would be awesome to create a `GET /history` Python endpoint mapping to our new PostgreSQL table, so that we can rip out my `mockHistory` array and wire it to live database results!
+> **I have already implemented the `GET /history` and `POST /history` endpoints**, so my previous `mockHistory` array and the need for endpoint wiring are officially completed. The `Question History` dashboard at `frontend/src/app/(dashboard)/history/page.tsx` is now a fully functional Server Component fetching live results from our Postgres schema utilizing the `session.user.id`.
+> 
+> I also upgraded the AI analysis models to the stable `2.5` versions (`gemini-2.5-pro` and `gemini-2.5-flash`) as the legacy `gemini-2.0-flash` was deprecated for this environment. Everything is hot-reloaded and live!
