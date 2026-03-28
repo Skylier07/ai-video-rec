@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { GoogleGenAI, Modality, type Session, type LiveServerMessage } from "@google/genai";
+import { getScanInterval } from "@/components/ScanIntervalSetting";
 
 const SYSTEM_INSTRUCTION = `You are a homework problem detector. You receive frames from a student's screen.
 
@@ -14,7 +15,6 @@ Your ONLY job:
 - Never add any other text, explanation, or commentary.`;
 
 const MODEL = "gemini-3.1-flash-live-preview";
-const CAPTURE_INTERVAL_MS = 5000;
 
 export default function ScreenRecorder() {
   const router = useRouter();
@@ -121,7 +121,7 @@ export default function ScreenRecorder() {
         callbacks: {
           onopen: () => {
             console.log("[ScreenRecorder] Live API connection opened");
-            intervalRef.current = setInterval(sendFrame, CAPTURE_INTERVAL_MS);
+            intervalRef.current = setInterval(sendFrame, getScanInterval());
             setTimeout(sendFrame, 500);
           },
           onmessage: (message: LiveServerMessage) => {

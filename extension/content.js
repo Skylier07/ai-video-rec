@@ -25,7 +25,21 @@ Your ONLY job:
 - Never add any other text, explanation, or commentary.`;
 
   const WS_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
-  const CAPTURE_INTERVAL_MS = 5000;
+
+  // Load persisted interval on script init
+  chrome.storage.local.get({ scan_interval_ms: 5000 }, (result) => {
+    captureIntervalMs = result.scan_interval_ms;
+  });
+
+  // Sync interval from the StudySnap settings page via postMessage
+  window.addEventListener("message", (event) => {
+    if (event.source !== window) return; // same-tab messages only
+    if (event.data?.type === "STUDYSNAP_SET_INTERVAL") {
+      captureIntervalMs = event.data.intervalMs;
+      chrome.storage.local.set({ scan_interval_ms: event.data.intervalMs });
+    }
+  });
+  let captureIntervalMs = 5000; // updated from chrome.storage.local at session start
 
   // ── Root container ────────────────────────────────────────────────────────
 
@@ -91,7 +105,7 @@ Your ONLY job:
         },
       }));
 
-      captureInterval = setInterval(captureAndSend, CAPTURE_INTERVAL_MS);
+      captureInterval = setInterval(captureAndSend, captureIntervalMs);
       setTimeout(captureAndSend, 800);
     };
 

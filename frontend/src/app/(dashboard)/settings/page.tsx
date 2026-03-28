@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import ThemeToggleSetting from "@/components/ThemeToggleSetting";
 import SolveModeSetting from "@/components/SolveModeSetting";
+import ScanIntervalSetting from "@/components/ScanIntervalSetting";
 import ClearHistoryButton from "@/components/ClearHistoryButton";
 import SignOutButton from "@/components/SignOutButton";
 
@@ -60,6 +61,12 @@ export default async function SettingsPage() {
         <section className="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
           <h2 className="text-xs font-black text-outline uppercase tracking-widest mb-4">Solution Quality</h2>
           <SolveModeSetting />
+        </section>
+
+        {/* Screen Scanning */}
+        <section className="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
+          <h2 className="text-xs font-black text-outline uppercase tracking-widest mb-4">Screen Scanning</h2>
+          <ScanIntervalSetting />
         </section>
 
         {/* Data & Privacy */}
