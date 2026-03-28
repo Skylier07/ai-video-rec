@@ -13,11 +13,13 @@ Your ONLY job:
   NO_PROBLEM
 - Never add any other text, explanation, or commentary.`;
 
+const MODEL = "gemini-2.0-flash-live-preview-04-09";
 const CAPTURE_INTERVAL_MS = 5000;
 
 export default function ScreenRecorder() {
   const router = useRouter();
   const [isRecording, setIsRecording] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const [toast, setToast] = useState<{ question: string; imageBase64: string } | null>(null);
 
   const streamRef = useRef<MediaStream | null>(null);
@@ -27,7 +29,6 @@ export default function ScreenRecorder() {
   const isRecordingRef = useRef(false);
   const latestBase64Ref = useRef<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Accumulate streamed text across partial onmessage calls
   const pendingTextRef = useRef("");
 
   useEffect(() => {
@@ -72,7 +73,7 @@ export default function ScreenRecorder() {
     const base64 = captureFrame();
     if (!base64) return;
     latestBase64Ref.current = base64;
-    pendingTextRef.current = ""; // reset accumulator for fresh response
+    pendingTextRef.current = "";
 
     sessionRef.current.sendRealtimeInput({
       video: { data: base64, mimeType: "image/jpeg" },
@@ -80,41 +81,55 @@ export default function ScreenRecorder() {
   }, [captureFrame]);
 
   const startRecording = useCallback(async () => {
+    setConnectionError(null);
+
+    let stream: MediaStream;
     try {
-      const stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
-      streamRef.current = stream;
+      stream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+    } catch {
+      // User cancelled the dialog — stay idle silently
+      return;
+    }
 
-      if (videoRef.current) {
-        videoRef.current.srcObject = stream;
-        await videoRef.current.play();
-      }
+    // Show recording UI immediately (don't wait for WS handshake)
+    streamRef.current = stream;
+    setIsRecording(true);
 
-      stream.getVideoTracks()[0].onended = () => {
-        if (isRecordingRef.current) stopRecording();
-      };
+    if (videoRef.current) {
+      videoRef.current.srcObject = stream;
+      videoRef.current.play().catch(() => {});
+    }
 
-      const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY ?? "";
+    stream.getVideoTracks()[0].onended = () => {
+      if (isRecordingRef.current) stopRecording();
+    };
+
+    const apiKey = process.env.NEXT_PUBLIC_GEMINI_API_KEY ?? "";
+
+    try {
       const genAI = new GoogleGenAI({ apiKey });
 
       const session = await genAI.live.connect({
-        model: "gemini-2.0-flash-live-001",
+        model: MODEL,
         config: {
           responseModalities: [Modality.TEXT],
           systemInstruction: SYSTEM_INSTRUCTION,
         },
         callbacks: {
-          onopen: () => setIsRecording(true),
+          onopen: () => {
+            // Connection confirmed — start sending frames
+            intervalRef.current = setInterval(sendFrame, CAPTURE_INTERVAL_MS);
+            setTimeout(sendFrame, 500);
+          },
           onmessage: (message: LiveServerMessage) => {
             const content = message.serverContent;
             if (!content) return;
 
-            // Accumulate text from all parts (model streams incrementally)
             const parts = content.modelTurn?.parts ?? [];
             for (const part of parts) {
               if (part.text) pendingTextRef.current += part.text;
             }
 
-            // Only act when the turn is complete
             if (content.turnComplete && latestBase64Ref.current) {
               const fullText = pendingTextRef.current.trim();
               pendingTextRef.current = "";
@@ -124,16 +139,25 @@ export default function ScreenRecorder() {
               }
             }
           },
-          onerror: (e: ErrorEvent) => console.error("Live API error:", e.message),
-          onclose: (_e: CloseEvent) => { if (isRecordingRef.current) stopRecording(); },
+          onerror: (e: ErrorEvent) => {
+            console.error("Live API error:", e.message);
+            setConnectionError("Live API error — check console for details");
+          },
+          onclose: (_e: CloseEvent) => {
+            if (isRecordingRef.current) stopRecording();
+          },
         },
       });
 
       sessionRef.current = session;
-      intervalRef.current = setInterval(sendFrame, CAPTURE_INTERVAL_MS);
-      setTimeout(sendFrame, 500);
     } catch (err) {
-      console.warn("Screen capture not started:", err);
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error("Live API connect failed:", msg);
+      setConnectionError(`Connection failed: ${msg}`);
+      // Clean up the stream we already started
+      stream.getTracks().forEach((t) => t.stop());
+      streamRef.current = null;
+      setIsRecording(false);
     }
   }, [stopRecording, sendFrame]);
 
@@ -155,7 +179,6 @@ export default function ScreenRecorder() {
     return () => { if (toastTimerRef.current) clearTimeout(toastTimerRef.current); };
   }, [toast]);
 
-  // Cleanup on unmount
   useEffect(() => { return () => { stopRecording(); }; }, [stopRecording]);
 
   const handleFindVideos = useCallback(() => {
@@ -197,7 +220,7 @@ export default function ScreenRecorder() {
         ) : (
           <button
             onClick={startRecording}
-            title="Start Screen Monitor — watch for homework problems (Shift+S to scan manually)"
+            title="Start Screen Monitor — detect homework problems automatically"
             style={{
               width: "44px", height: "44px", borderRadius: "50%",
               background: "#00236f", color: "white", border: "none",
@@ -209,7 +232,28 @@ export default function ScreenRecorder() {
         )}
       </div>
 
-      {/* Toast — bottom-right */}
+      {/* Connection error toast */}
+      {connectionError && !isRecording && (
+        <div style={{
+          position: "fixed", bottom: "24px", right: "24px", zIndex: 70,
+          background: "#ba1a1a", color: "white", borderRadius: "14px",
+          padding: "14px 18px", maxWidth: "300px",
+          boxShadow: "0 8px 32px rgba(0,0,0,0.4)",
+          display: "flex", alignItems: "center", gap: "10px",
+        }}>
+          <span style={{ fontSize: "16px", flexShrink: 0 }}>⚠</span>
+          <div>
+            <p style={{ fontSize: "12px", fontWeight: "bold", marginBottom: "2px" }}>Screen Monitor Error</p>
+            <p style={{ fontSize: "11px", opacity: 0.85 }}>{connectionError}</p>
+          </div>
+          <button onClick={() => setConnectionError(null)} style={{
+            background: "none", border: "none", color: "white",
+            cursor: "pointer", fontSize: "16px", flexShrink: 0, opacity: 0.7,
+          }}>✕</button>
+        </div>
+      )}
+
+      {/* Problem detected toast */}
       {toast && (
         <div style={{
           position: "fixed", bottom: "24px", right: "24px", zIndex: 70,
