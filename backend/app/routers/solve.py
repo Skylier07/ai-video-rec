@@ -9,6 +9,7 @@ class SolveRequest(BaseModel):
     question: str
     image_base64: str | None = None
     image_mime_type: str | None = None
+    mode: str = "accurate"  # "accurate" = Pro, "fast" = Flash
 
 
 class SolveStep(BaseModel):
@@ -28,5 +29,6 @@ def solve(req: SolveRequest):
         question=req.question,
         image_base64=req.image_base64,
         image_mime_type=req.image_mime_type,
+        mode=req.mode,
     )
     return result

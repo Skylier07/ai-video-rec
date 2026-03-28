@@ -88,10 +88,12 @@ export async function solveQuestion(
   question: string,
   imageBase64?: string | null,
   imageMimeType?: string | null,
+  mode: "accurate" | "fast" = "accurate",
 ): Promise<SolveResponse> {
   return post("/solve", {
     question,
     image_base64: imageBase64 ?? null,
     image_mime_type: imageMimeType ?? null,
+    mode,
   });
 }

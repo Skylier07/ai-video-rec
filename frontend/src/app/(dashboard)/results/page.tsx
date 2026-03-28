@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { StudySnapResults, VideoSegment, VideoMeta } from "@/types";
 import { solveQuestion, type SolveResponse } from "@/lib/api";
 import MathMarkdown from "@/components/MathMarkdown";
+import { getSolveMode } from "@/components/SolveModeSetting";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -176,6 +177,7 @@ export default function Results() {
       results.question,
       input.imageBase64 ?? null,
       input.imageMimeType ?? null,
+      getSolveMode(),
     )
       .then((res) => {
         setSolution(res);

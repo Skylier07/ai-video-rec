@@ -91,7 +91,8 @@ Return ONLY valid JSON. No markdown, no extra text."""
     return result if isinstance(result, list) else []
 
 
-model_solve = genai.GenerativeModel("gemini-3.1-pro-preview")
+model_solve_accurate = genai.GenerativeModel("gemini-3.1-pro-preview")
+model_solve_fast = genai.GenerativeModel("gemini-3.1-flash-preview")
 
 SOLVE_PROMPT = """You are an expert tutor. A student has the following question:
 
@@ -128,8 +129,10 @@ def solve_question(
     question: str,
     image_base64: str | None = None,
     image_mime_type: str | None = None,
+    mode: str = "accurate",
 ) -> dict:
-    """Generate a step-by-step solution using Gemini 3.1 Pro Preview."""
+    """Generate a step-by-step solution. mode='accurate' uses Pro, mode='fast' uses Flash."""
+    model = model_solve_fast if mode == "fast" else model_solve_accurate
     parts: list = []
 
     if image_base64:
@@ -142,5 +145,5 @@ def solve_question(
 
     parts.append(SOLVE_PROMPT.format(question=question))
 
-    response = model_solve.generate_content(parts)
+    response = model.generate_content(parts)
     return _parse_json(response.text)
