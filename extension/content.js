@@ -199,21 +199,19 @@ If no question is visible when they ask for videos, say: "I don't see a question
       const setupMsg = {
         setup: {
           model: "models/gemini-3.1-flash-live-preview",
-          // Manual mode: AUDIO + TEXT so model has a text channel for the FIND_VIDEOS signal
-          // and TEXT modality also reliably triggers turn responses with VAD.
+          // Manual mode: TEXT only — AUDIO+TEXT causes 1011 on this model.
+          // VAD still works with TEXT; FIND_VIDEOS signal reliably appears in modelTurn.parts[].text.
+          // Auto mode: AUDIO + transcription (existing behaviour).
           generationConfig: {
-            responseModalities: detectionMode === "manual" ? ["AUDIO", "TEXT"] : ["AUDIO"],
+            responseModalities: detectionMode === "manual" ? ["TEXT"] : ["AUDIO"],
           },
-          outputAudioTranscription: {},
+          ...(detectionMode !== "manual" && { outputAudioTranscription: {} }),
           systemInstruction: {
             parts: [{ text: detectionMode === "manual" ? SYSTEM_INSTRUCTION_MANUAL : SYSTEM_INSTRUCTION_AUTO }],
             role: "user",
           },
         },
       };
-      if (detectionMode === "manual") {
-        setupMsg.setup.inputAudioTranscription = {};
-      }
       ws.send(JSON.stringify(setupMsg));
 
       captureInterval = setInterval(captureAndSend, CAPTURE_INTERVAL_MS);
@@ -293,6 +291,8 @@ If no question is visible when they ask for videos, say: "I don't see a question
       console.warn("[StudySnap] WS closed:", e.code, e.reason);
       clearInterval(captureInterval);
       captureInterval = null;
+      stopMicCapture();
+      stopPlayback();
       if (isRecording) {
         // Connection dropped — reset UI
         isRecording = false;
