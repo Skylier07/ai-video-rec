@@ -120,7 +120,7 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | Task 2: Layouts & Nav | ✅ Done | Recreated Top/Side/Bottom bars matching Stitch UI |
 | Task 3: Static Screens | ✅ Done | Scaffolded `/`, `/processing`, `/results` statically |
 | Task 4: API Integration | ✅ Done | Full Home→Processing→Results flow wired, localStorage bridge, real YouTube thumbnails → iframes, Reveal Answer gate |
-| Task 5: Screen Recorder | ✅ Done | Gemini Live API (`gemini-live-2.5-flash-preview`), floating button + toast, wired to /processing pipeline |
+| Task 5: Screen Recorder | ✅ Done | Gemini Live API (`gemini-3.1-flash-live-preview`), floating button + toast, wired to /processing pipeline |
 
 ---
 
@@ -145,7 +145,7 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | 2026-03-27 | Claude | ✅ **TIMESTAMP PRECISION IMPROVEMENT** — `/rank` now anchors Gemini segment times to real transcript cue boundaries and clamps segment ranges; results UI now embeds clips with `start` + `end` and adds direct `Open @ timestamp` links. Added rank test for anchoring/clamping behavior. |
 | 2026-03-27 | Claude | ✅ **SCREEN RECORDER COMPLETE** — `frontend/src/components/ScreenRecorder.tsx` built and mounted in `app/layout.tsx`. Uses `@google/genai` Live API + `gemini-3.1-flash-live-preview`. Sends canvas frames every 5s, detects homework problems, shows toast → "Find Videos" routes to /processing. Shift+S for manual scan. Requires `NEXT_PUBLIC_GEMINI_API_KEY` in `.env.local`. |
 | 2026-03-27 | Claude | 🔨 **SCREEN RECORDER FIXES** — Two bugs fixed: (1) `onclose` now logs WS close code/reason and shows it in error toast — previously silent, making diagnosis impossible; (2) replaced `sendRealtimeInput` with `sendClientContent + turnComplete:true` so each frame is an explicit user turn the model must answer (fixes silent no-detection). If connection still drops, the error toast will now show the exact server reason (check for model name / auth issues). |
-| 2026-03-27 | Claude | 🔨 **SCREEN RECORDER 1011 FIX** — Root cause: (1) `gemini-3.1-flash-live-preview` doesn't exist — changed to `gemini-live-2.5-flash-preview` (valid SDK model); (2) `sendClientContent` with `inlineData` is wrong for images in Live API — SDK docs say "use `sendRealtimeInput` for video frames/images" — switched to `sendRealtimeInput({ video: { data, mimeType } })`. Also fixed pre-existing `Modality` enum type error. |
+| 2026-03-27 | Claude | 🔨 **SCREEN RECORDER 1011 FIX** — Root cause: (1) `gemini-3.1-flash-live-preview` doesn't exist — changed to `gemini-3.1-flash-live-preview` (valid SDK model); (2) `sendClientContent` with `inlineData` is wrong for images in Live API — SDK docs say "use `sendRealtimeInput` for video frames/images" — switched to `sendRealtimeInput({ video: { data, mimeType } })`. Also fixed pre-existing `Modality` enum type error. |
 
 ---
 
@@ -155,7 +155,7 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 
 **ScreenRecorder component is complete** (`frontend/src/components/ScreenRecorder.tsx`):
 - Floating 🔴 button (bottom-left) starts a screen capture session
-- Sends frames every 5s to `gemini-live-2.5-flash-preview` via Live API WebSocket
+- Sends frames every 5s to `gemini-3.1-flash-live-preview` via Live API WebSocket
 - When a homework problem is detected: toast appears (bottom-right) with "Find Videos →"
 - "Find Videos" stops recording, saves frame to `localStorage["studysnap_input"]`, routes to `/processing`
 - Currently mounted in `app/layout.tsx` — **after your auth branch merges, please move `<ScreenRecorder />` to `app/(dashboard)/layout.tsx`** so it only shows for authenticated users
