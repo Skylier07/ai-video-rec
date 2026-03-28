@@ -17,6 +17,7 @@
   let micStream = null;
   let micAudioContext = null;
   let micProcessor = null;
+  let isSpeaking = false; // true only while speak button is held
   let playbackContext = null;
   let nextPlayTime = 0;
 
@@ -29,16 +30,24 @@ Your ONLY job:
   NO_PROBLEM
 - Never add any other text, explanation, or commentary.`;
 
-  const SYSTEM_INSTRUCTION_MANUAL = `You are a friendly study assistant. You can see the student's screen and hear them speak.
+  const SYSTEM_INSTRUCTION_MANUAL = `You are a study assistant. You can see the student's screen and hear them speak.
 
-When the student wants to find videos, call find_videos. Two cases:
-1. They name a concept verbally (e.g. "I'm stuck on Newton's second law", "find me videos about integration by parts") — call find_videos with that concept as the question, even if nothing relevant is visible on screen.
-2. They ask you to find videos for something on their screen — call find_videos with the exact question text you see on screen.
+RULE: The moment a student expresses ANY intent to find videos or get help — call find_videos IMMEDIATELY. Do NOT ask for confirmation. Do NOT say "would you like me to...". Do NOT say "is that something you'd like...". Just call find_videos right away.
 
-After calling find_videos, also respond naturally and briefly (e.g. "Sure, searching for that now!").
+Trigger words/phrases that ALWAYS mean call find_videos immediately (no questions asked):
+- "find videos", "find me videos", "search for videos", "look up videos"
+- "I'm stuck on", "I don't understand", "help me with", "I need help with"
+- "find help", "get help", "search for", "look up"
+- "can you find", "can you search", "can you look up"
+- Any request for educational resources about a topic
 
-For casual conversation or direct questions you can answer yourself, respond helpfully without calling find_videos.
-If they ask for screen videos but you can't see a question AND they haven't named a concept, ask: "I don't see a question on screen — what concept are you looking for?"`;
+Two cases for what to pass as the question argument:
+1. Student names a concept verbally → use that concept (e.g. "Newton's second law")
+2. Student refers to screen → use the exact question text visible on screen
+
+After calling find_videos, respond briefly: "Searching for that now!"
+
+For pure casual conversation or questions you can answer directly yourself, respond normally without calling find_videos.`;
 
   const WS_URL = `wss://generativelanguage.googleapis.com/ws/google.ai.generativelanguage.v1beta.GenerativeService.BidiGenerateContent?key=${GEMINI_API_KEY}`;
   const CAPTURE_INTERVAL_MS = 5000;
@@ -90,19 +99,22 @@ If they ask for screen videos but you can't see a question AND they haven't name
   // Push-to-talk send button (manual mode only — appears above main button)
   const speakBtn = document.createElement("button");
   speakBtn.id = "studysnap-speak";
-  speakBtn.title = "Tap after speaking — send your question to the model";
+  speakBtn.title = "Hold to speak — release when done";
   speakBtn.textContent = "🎤";
   speakBtn.style.display = "none";
   root.appendChild(speakBtn);
 
-  speakBtn.addEventListener("click", () => {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+  // Press-and-hold PTT: activityStart on press, activityEnd on release.
+  // This narrows the mic window to exactly when the user intends to speak,
+  // so background audio/ambient sound is never captured.
+  function onSpeakStart(e) {
+    e.preventDefault();
+    if (!ws || ws.readyState !== WebSocket.OPEN || speakBtn.disabled) return;
     pendingText = "";
-    speakBtn.textContent = "⏳";
-    speakBtn.disabled = true;
+    isSpeaking = true;
+    speakBtn.textContent = "🔴";
 
-    // Capture a fresh frame so the model sees exactly what's on screen right now,
-    // then immediately send activityEnd so both arrive in the same turn.
+    // Capture fresh frame + open the activity window simultaneously
     if (chrome.runtime?.id) {
       chrome.runtime.sendMessage({ action: "captureTab" }, (response) => {
         if (response?.dataUrl) {
@@ -110,14 +122,28 @@ If they ask for screen videos but you can't see a question AND they haven't name
           latestBase64 = base64;
           ws.send(JSON.stringify({ realtimeInput: { video: { data: base64, mimeType: "image/jpeg" } } }));
         }
-        ws.send(JSON.stringify({ realtimeInput: { activityEnd: {} } }));
-        console.log("[StudySnap] Fresh frame + activityEnd sent — waiting for model response");
       });
-    } else {
-      ws.send(JSON.stringify({ realtimeInput: { activityEnd: {} } }));
-      console.log("[StudySnap] activityEnd sent — waiting for model response");
     }
-  });
+    ws.send(JSON.stringify({ realtimeInput: { activityStart: {} } }));
+    console.log("[StudySnap] activityStart sent — listening while held");
+  }
+
+  function onSpeakEnd(e) {
+    e.preventDefault();
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!isSpeaking) return; // wasn't held
+    isSpeaking = false;
+    speakBtn.textContent = "⏳";
+    speakBtn.disabled = true;
+    ws.send(JSON.stringify({ realtimeInput: { activityEnd: {} } }));
+    console.log("[StudySnap] activityEnd sent — waiting for model response");
+  }
+
+  speakBtn.addEventListener("mousedown", onSpeakStart);
+  speakBtn.addEventListener("touchstart", onSpeakStart, { passive: false });
+  speakBtn.addEventListener("mouseup", onSpeakEnd);
+  speakBtn.addEventListener("mouseleave", onSpeakEnd);
+  speakBtn.addEventListener("touchend", onSpeakEnd, { passive: false });
 
   btn.addEventListener("click", () => {
     if (isRecording) stopMonitoring(); else startMonitoring();
@@ -160,34 +186,53 @@ If they ask for screen videos but you can't see a question AND they haven't name
   }
 
   function startMicCapture() {
-    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false })
+    // First, enumerate devices so we can see what Chrome picked
+    navigator.mediaDevices.enumerateDevices().then((devices) => {
+      const mics = devices.filter(d => d.kind === "audioinput");
+      console.log("[StudySnap] Available mic devices:", mics.map(d => `${d.deviceId.slice(0,8)}… ${d.label || "(no label)"}`).join(" | "));
+    });
+
+    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
       .then((stream) => {
         micStream = stream;
-        micAudioContext = new AudioContext({ sampleRate: 16000 });
+        const track = stream.getAudioTracks()[0];
+        console.log("[StudySnap] Mic track label:", track?.label || "(no label)", "| muted:", track?.muted, "| enabled:", track?.enabled, "| readyState:", track?.readyState);
+
+        // Do NOT request a specific sampleRate — use whatever the system provides.
+        micAudioContext = new AudioContext();
+        const actualRate = micAudioContext.sampleRate;
+        console.log("[StudySnap] AudioContext sampleRate:", actualRate);
+
         const source = micAudioContext.createMediaStreamSource(stream);
-        micProcessor = micAudioContext.createScriptProcessor(2048, 1, 1);
+        micProcessor = micAudioContext.createScriptProcessor(4096, 1, 1);
+        let chunkCount = 0;
 
         micProcessor.onaudioprocess = (e) => {
-          if (!ws || ws.readyState !== WebSocket.OPEN) return;
           const float32Data = e.inputBuffer.getChannelData(0);
+          const peak = float32Data.reduce((m, v) => Math.max(m, Math.abs(v)), 0);
+
+          // Log first 5 chunks regardless of isSpeaking — confirms mic is receiving signal
+          if (chunkCount < 5) {
+            console.log(`[StudySnap] Chunk ${chunkCount} peak: ${peak.toFixed(5)} (isSpeaking=${isSpeaking})`);
+          }
+          chunkCount++;
+
+          // Only send audio while the speak button is held — prevents ambient audio capture
+          if (!ws || ws.readyState !== WebSocket.OPEN || !isSpeaking) return;
+
           const int16Data = new Int16Array(float32Data.length);
           for (let i = 0; i < float32Data.length; i++) {
             int16Data[i] = Math.max(-32768, Math.min(32767, float32Data[i] * 32768));
           }
           const base64 = arrayBufferToBase64(int16Data.buffer);
           ws.send(JSON.stringify({
-            realtimeInput: { audio: { data: base64, mimeType: "audio/pcm;rate=16000" } },
+            realtimeInput: { audio: { data: base64, mimeType: `audio/pcm;rate=${actualRate}` } },
           }));
         };
 
         source.connect(micProcessor);
         micProcessor.connect(micAudioContext.destination);
-        console.log("[StudySnap] Mic capture started");
-        // Signal to model that user activity is beginning (VAD disabled — manual control)
-        if (ws && ws.readyState === WebSocket.OPEN) {
-          ws.send(JSON.stringify({ realtimeInput: { activityStart: {} } }));
-          console.log("[StudySnap] activityStart sent");
-        }
+        console.log("[StudySnap] Mic capture started — hold speak button to talk");
       })
       .catch((err) => {
         console.error("[StudySnap] Mic access denied:", err.message);
@@ -254,6 +299,7 @@ If they ask for screen videos but you can't see a question AND they haven't name
             },
           },
           outputAudioTranscription: {},
+          inputAudioTranscription: {},
           systemInstruction: {
             parts: [{ text: detectionMode === "manual" ? SYSTEM_INSTRUCTION_MANUAL : SYSTEM_INSTRUCTION_AUTO }],
             role: "user",
@@ -330,14 +376,10 @@ If they ask for screen videos but you can't see a question AND they haven't name
             if (latestBase64) showToast(question, latestBase64);
           }
         }
-        // Re-enable speak button and open next activity window
+        // Re-enable speak button — next activityStart fires on next button press
         if (isRecording && detectionMode === "manual") {
           speakBtn.textContent = "🎤";
           speakBtn.disabled = false;
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ realtimeInput: { activityStart: {} } }));
-            console.log("[StudySnap] activityStart sent — ready for next question");
-          }
         }
       }
 
@@ -358,6 +400,10 @@ If they ask for screen videos but you can't see a question AND they haven't name
             }
           }
         }
+      }
+
+      if (content.inputTranscription?.text) {
+        console.log("[StudySnap] User said:", content.inputTranscription.text);
       }
 
       if (content.outputTranscription?.text) {
@@ -385,14 +431,10 @@ If they ask for screen videos but you can't see a question AND they haven't name
           showToast(question, latestBase64);
         }
         // Manual mode: video trigger handled by find_videos toolCall above.
-        // Re-enable speak button and open next activity window.
+        // Re-enable speak button — next activityStart fires on next button press.
         if (isRecording && detectionMode === "manual") {
           speakBtn.textContent = "🎤";
           speakBtn.disabled = false;
-          if (ws && ws.readyState === WebSocket.OPEN) {
-            ws.send(JSON.stringify({ realtimeInput: { activityStart: {} } }));
-            console.log("[StudySnap] activityStart sent — ready for next question");
-          }
         }
       }
     };

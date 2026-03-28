@@ -80,6 +80,7 @@
 }
 
 #studysnap-speak:hover { background: #226022; }
+#studysnap-speak:active { background: #ba1a1a; box-shadow: 0 4px 16px rgba(186, 26, 26, 0.5); transform: scale(1.1); }
 #studysnap-speak:disabled { opacity: 0.55; cursor: default; }
 
 /* ── Problem detected toast ──────────────────────────────────────────────── */
