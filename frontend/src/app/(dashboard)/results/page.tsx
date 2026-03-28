@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { StudySnapResults, VideoSegment, VideoMeta } from "@/types";
+import { solveQuestion, type SolveResponse } from "@/lib/api";
 
 function formatTime(seconds: number): string {
   const m = Math.floor(seconds / 60);
@@ -153,6 +154,10 @@ export default function Results() {
   });
   const [playingId, setPlayingId] = useState<string | null>(null);
   const [watchedCount, setWatchedCount] = useState(0);
+  const [solution, setSolution] = useState<SolveResponse | null>(null);
+  const [solutionLoading, setSolutionLoading] = useState(false);
+  const [solutionError, setSolutionError] = useState<string | null>(null);
+  const [revealedSteps, setRevealedSteps] = useState(0);
 
   useEffect(() => {
     if (!results) {
@@ -167,10 +172,32 @@ export default function Results() {
     }
   }
 
-  function handleReveal() {
-    if (!results) return;
-    const query = encodeURIComponent(results.question);
-    window.open(`https://www.google.com/search?q=${query}`, "_blank");
+  async function handleReveal() {
+    if (!results || solutionLoading) return;
+    if (solution) {
+      // Already have solution — reveal next step
+      setRevealedSteps((prev) => Math.min(prev + 1, solution.steps.length + 1));
+      return;
+    }
+    // Fetch solution from API
+    setSolutionLoading(true);
+    setSolutionError(null);
+    try {
+      const input = typeof window !== "undefined"
+        ? JSON.parse(localStorage.getItem("studysnap_input") || "{}")
+        : {};
+      const res = await solveQuestion(
+        results.question,
+        input.imageBase64 ?? null,
+        input.imageMimeType ?? null,
+      );
+      setSolution(res);
+      setRevealedSteps(1); // Show first step immediately
+    } catch (e: any) {
+      setSolutionError(e.message || "Failed to generate solution");
+    } finally {
+      setSolutionLoading(false);
+    }
   }
 
   if (!results) {
@@ -247,7 +274,7 @@ export default function Results() {
 
               {/* Reveal Answer Button */}
               <button
-                disabled={watchedCount === 0}
+                disabled={watchedCount === 0 || solutionLoading}
                 onClick={handleReveal}
                 className={`flex items-center justify-center gap-3 w-full py-4 font-bold rounded-lg transition-all ${
                   watchedCount > 0
@@ -255,14 +282,78 @@ export default function Results() {
                     : "bg-surface-container text-outline cursor-not-allowed opacity-60 border border-outline-variant/20"
                 }`}
               >
-                <span className="material-symbols-outlined">{watchedCount > 0 ? "search" : "lock"}</span>
-                {watchedCount > 0 ? "Search for Answer" : "Reveal Answer"}
+                {solutionLoading ? (
+                  <>
+                    <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    Generating Solution…
+                  </>
+                ) : solution ? (
+                  <>
+                    <span className="material-symbols-outlined">arrow_downward</span>
+                    {revealedSteps >= solution.steps.length + 1
+                      ? "Full Solution Revealed"
+                      : `Reveal Step ${revealedSteps + 1}`}
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined">{watchedCount > 0 ? "auto_awesome" : "lock"}</span>
+                    {watchedCount > 0 ? "Reveal Answer" : "Reveal Answer"}
+                  </>
+                )}
               </button>
               <p className="text-center text-[10px] text-outline mt-3 font-semibold uppercase tracking-widest">
-                {watchedCount > 0
-                  ? "Opens Google search in a new tab"
-                  : "Watch a video segment to unlock"}
+                {solutionLoading
+                  ? "Using Gemini 3.1 Pro — this may take a moment"
+                  : solution
+                    ? revealedSteps >= solution.steps.length + 1
+                      ? "Complete solution shown below"
+                      : "Click again to reveal the next step"
+                    : watchedCount > 0
+                      ? "AI-powered step-by-step solution"
+                      : "Watch a video segment to unlock"}
               </p>
+
+              {/* Error state */}
+              {solutionError && (
+                <div className="mt-4 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
+                  <p className="text-sm text-red-600 dark:text-red-400">{solutionError}</p>
+                </div>
+              )}
+
+              {/* Step-by-step solution display */}
+              {solution && revealedSteps > 0 && (
+                <div className="mt-8 space-y-4">
+                  <h4 className="text-sm font-black text-primary uppercase tracking-widest flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[18px]">school</span>
+                    Step-by-Step Solution
+                  </h4>
+                  {solution.steps.slice(0, revealedSteps).map((step, i) => (
+                    <div
+                      key={step.step_number}
+                      className="relative pl-8 pb-4 border-l-2 border-secondary/30 last:border-l-0 animate-fadeIn"
+                    >
+                      <div className="absolute -left-3 top-0 w-6 h-6 rounded-full bg-secondary text-on-secondary-fixed flex items-center justify-center text-xs font-black shadow">
+                        {step.step_number}
+                      </div>
+                      <div className="bg-surface-container-lowest p-4 rounded-xl border border-outline-variant/10 shadow-sm">
+                        <h5 className="text-sm font-bold text-on-surface mb-2">{step.title}</h5>
+                        <p className="text-sm text-on-surface-variant leading-relaxed whitespace-pre-wrap">{step.content}</p>
+                      </div>
+                    </div>
+                  ))}
+
+                  {/* Final answer — only show after all steps are revealed */}
+                  {revealedSteps >= solution.steps.length + 1 && (
+                    <div className="mt-2 p-5 bg-gradient-to-r from-secondary/10 to-primary/10 rounded-xl border border-secondary/20 animate-fadeIn">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="material-symbols-outlined text-secondary text-[20px]">check_circle</span>
+                        <span className="text-xs font-black text-secondary uppercase tracking-widest">Final Answer</span>
+                      </div>
+                      <p className="text-lg font-bold text-on-surface leading-relaxed">{solution.final_answer}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           </div>
 

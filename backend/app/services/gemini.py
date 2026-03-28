@@ -89,3 +89,48 @@ Return ONLY valid JSON. No markdown, no extra text."""
     response = model_rank.generate_content(prompt)
     result = _parse_json(response.text)
     return result if isinstance(result, list) else []
+
+
+model_solve = genai.GenerativeModel("gemini-3.1-pro-preview")
+
+SOLVE_PROMPT = """You are an expert tutor. A student has the following question:
+
+"{question}"
+
+Provide a clear, step-by-step solution. Structure your response as a JSON object:
+{{
+  "steps": [
+    {{
+      "step_number": 1,
+      "title": "Short title for this step",
+      "content": "Detailed explanation of what to do in this step. Use clear math notation where needed."
+    }}
+  ],
+  "final_answer": "The final answer, stated concisely."
+}}
+
+Be thorough but concise. Each step should be a single logical action.  
+If the problem involves math, show all work.  
+Return ONLY valid JSON. No markdown code blocks, no extra text."""
+
+
+def solve_question(
+    question: str,
+    image_base64: str | None = None,
+    image_mime_type: str | None = None,
+) -> dict:
+    """Generate a step-by-step solution using Gemini 3.1 Pro Preview."""
+    parts: list = []
+
+    if image_base64:
+        parts.append({
+            "inline_data": {
+                "mime_type": image_mime_type,
+                "data": image_base64,
+            }
+        })
+
+    parts.append(SOLVE_PROMPT.format(question=question))
+
+    response = model_solve.generate_content(parts)
+    return _parse_json(response.text)

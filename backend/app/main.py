@@ -38,6 +38,9 @@ app.include_router(auth_router.router)
 from app.routers import history as history_router
 app.include_router(history_router.router)
 
+from app.routers import solve as solve_router
+app.include_router(solve_router.router)
+
 
 @app.get("/health")
 def health():
