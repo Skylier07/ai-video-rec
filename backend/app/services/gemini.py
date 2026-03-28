@@ -10,10 +10,10 @@ model_analyze = genai.GenerativeModel("gemini-2.5-pro")
 model_rank = genai.GenerativeModel("gemini-2.0-flash")
 
 ANALYZE_PROMPT = """Analyze this problem carefully and return a JSON object with exactly these fields:
-- "question": the exact question being asked, as clean readable text (no LaTeX unless necessary)
-- "concepts": a list of 2-4 core concepts a student must understand to solve this problem
+    - "question": the exact question being asked, as clean readable text (no LaTeX unless necessary)
+    - "concepts": a list of 2-4 highly specific, search-engine-optimized phrases designed to be used directly as YouTube search queries. These queries must yield tutorial videos that provide the exact theoretical principles and mathematical steps required to solve this specific problem. Avoid broad topics; use precise, targeted descriptions that describe the exact scenario (e.g., instead of 'Ampere's Law', use 'Deriving the magnetic field inside and outside a thick uniformly current-carrying cylindrical shell').
 
-Return ONLY valid JSON. No markdown code blocks, no extra text."""
+    Return ONLY valid JSON. No markdown code blocks, no extra text."""
 
 
 def _parse_json(text: str) -> dict | list:
