@@ -77,6 +77,7 @@ export default function ScreenRecorder() {
 
     sessionRef.current.sendRealtimeInput({
       video: { data: base64, mimeType: "image/jpeg" },
+      text: "Analyze this screen.",
     });
   }, [captureFrame]);
 
