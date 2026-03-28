@@ -144,6 +144,7 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | 2026-03-27 | Claude | 📝 **MODEL NAME CLARIFIED** — ScreenRecorder Live API model is `gemini-3.1-flash-live-preview` (confirmed by user). Updated all references in CLAUDE.md and ScreenRecorder.tsx. |
 | 2026-03-27 | Claude | ✅ **TIMESTAMP PRECISION IMPROVEMENT** — `/rank` now anchors Gemini segment times to real transcript cue boundaries and clamps segment ranges; results UI now embeds clips with `start` + `end` and adds direct `Open @ timestamp` links. Added rank test for anchoring/clamping behavior. |
 | 2026-03-27 | Claude | ✅ **SCREEN RECORDER COMPLETE** — `frontend/src/components/ScreenRecorder.tsx` built and mounted in `app/layout.tsx`. Uses `@google/genai` Live API + `gemini-3.1-flash-live-preview`. Sends canvas frames every 5s, detects homework problems, shows toast → "Find Videos" routes to /processing. Shift+S for manual scan. Requires `NEXT_PUBLIC_GEMINI_API_KEY` in `.env.local`. |
+| 2026-03-27 | Claude | 🔨 **SCREEN RECORDER FIXES** — Two bugs fixed: (1) `onclose` now logs WS close code/reason and shows it in error toast — previously silent, making diagnosis impossible; (2) replaced `sendRealtimeInput` with `sendClientContent + turnComplete:true` so each frame is an explicit user turn the model must answer (fixes silent no-detection). If connection still drops, the error toast will now show the exact server reason (check for model name / auth issues). |
 
 ---
 
