@@ -71,6 +71,9 @@ Transcript (format: [timestamp in seconds] text):
 {transcript_text}
 
 Find 1-2 segments (each 30-120 seconds long) most relevant to the concepts above.
+Pick the first moment where the concepts become central in the explanation.
+For start_time, use an exact timestamp that appears in the transcript labels above.
+Do not invent timestamps that are not present in transcript labels.
 Return a JSON array:
 [
   {{

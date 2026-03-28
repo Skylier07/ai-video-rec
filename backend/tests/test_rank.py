@@ -34,6 +34,32 @@ def test_rank_endpoint(client):
     assert data["segments"][0]["start_time"] == 30
 
 
+def test_rank_anchors_to_real_transcript_cue_and_clamps_end(client):
+    mocked_model_segment = [
+        {
+            "video_id": "abc123",
+            "title": "Intro to Algebra",
+            "start_time": 31,  # should anchor to prior cue start at 30
+            "end_time": 999,   # should clamp to transcript end at 35
+            "explanation": "Explains solving linear equations.",
+        }
+    ]
+
+    with patch("app.routers.rank.get_transcript") as mock_transcript, \
+         patch("app.routers.rank.rank_segments") as mock_rank:
+        mock_transcript.return_value = MOCK_TRANSCRIPT
+        mock_rank.return_value = mocked_model_segment
+        response = client.post("/rank", json={
+            "concepts": ["algebra"],
+            "videos": [{"video_id": "abc123", "title": "Intro to Algebra"}],
+        })
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["segments"][0]["start_time"] == 30
+    assert data["segments"][0]["end_time"] == 35
+
+
 def test_rank_skips_videos_without_transcripts(client):
     with patch("app.routers.rank.get_transcript") as mock_transcript, \
          patch("app.routers.rank.rank_segments") as mock_rank:
