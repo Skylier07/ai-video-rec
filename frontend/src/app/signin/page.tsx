@@ -11,7 +11,7 @@ export default function SignInPage() {
       <header className="fixed top-0 left-0 w-full z-50 flex justify-between items-center px-6 py-4 bg-transparent dark:bg-transparent">
         <div className="flex items-center gap-2">
           <Link href="/" className="text-2xl font-black text-[#00236f] dark:text-blue-500 tracking-tighter">
-            StudySnip
+            StudySnap
           </Link>
         </div>
       </header>
@@ -54,7 +54,7 @@ export default function SignInPage() {
           <form className="space-y-6">
             <div className="space-y-1.5">
               <label className="text-xs font-bold uppercase tracking-widest text-on-surface-variant ml-1">Email Address</label>
-              <input className="w-full px-4 py-3 bg-surface-container-low border-b-2 border-transparent focus:border-secondary-fixed-dim focus:ring-0 transition-all duration-300 text-on-surface placeholder:text-outline/50 rounded-t-lg outline-none" placeholder="scholar@studysnip.edu" type="email"/>
+              <input className="w-full px-4 py-3 bg-surface-container-low border-b-2 border-transparent focus:border-secondary-fixed-dim focus:ring-0 transition-all duration-300 text-on-surface placeholder:text-outline/50 rounded-t-lg outline-none" placeholder="scholar@studysnap.edu" type="email"/>
             </div>
             
             <div className="space-y-1.5">
@@ -87,7 +87,7 @@ export default function SignInPage() {
           <a className="font-manrope text-xs uppercase tracking-widest font-medium text-[#444651] dark:text-slate-500 hover:text-[#00236f] dark:hover:text-blue-300 transition-all opacity-80 hover:opacity-100" href="#">Terms of Service</a>
           <a className="font-manrope text-xs uppercase tracking-widest font-medium text-[#444651] dark:text-slate-500 hover:text-[#00236f] dark:hover:text-blue-300 transition-all opacity-80 hover:opacity-100" href="#">Contact Support</a>
         </div>
-        <p className="font-manrope text-xs uppercase tracking-widest font-medium text-[#444651] dark:text-slate-500">© 2026 StudySnip. The Illuminated Archive.</p>
+        <p className="font-manrope text-xs uppercase tracking-widest font-medium text-[#444651] dark:text-slate-500">© 2026 StudySnap. The Illuminated Archive.</p>
       </footer>
 
       {/* Decorative Elements */}

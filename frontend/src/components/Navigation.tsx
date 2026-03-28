@@ -16,7 +16,7 @@ export function TopNavBar() {
     <nav className="fixed top-0 w-full z-50 bg-white/80 dark:bg-[#00236f]/80 backdrop-blur-xl shadow-[0_16px_32px_rgba(0,35,111,0.04)] flex justify-between items-center px-6 h-16">
       <div className="flex items-center gap-8">
         <span className="text-2xl font-extrabold tracking-tighter text-[#00236f] dark:text-[#e9c349]">
-          StudySnip
+          StudySnap
         </span>
         <div className="hidden md:flex gap-6 items-center">
           <Link
@@ -145,7 +145,7 @@ export function BottomNavBar() {
         href="#"
       >
         <span className="material-symbols-outlined">auto_awesome</span>
-        <span className="font-manrope text-[10px] font-medium">Snip</span>
+        <span className="font-manrope text-[10px] font-medium">Snap</span>
       </Link>
       <Link
         className={`flex flex-col items-center justify-center p-3 transition-all duration-300 ${

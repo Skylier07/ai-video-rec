@@ -12,7 +12,7 @@ const manrope = Manrope({
 });
 
 export const metadata: Metadata = {
-  title: 'StudySnip - Your Academic Ally',
+  title: 'StudySnap - Your Academic Ally',
   description: 'Upload a photo of a problem and get verified video snippets.',
 };
 
