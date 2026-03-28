@@ -263,12 +263,8 @@ For pure casual conversation or questions you can answer directly yourself, resp
         },
       };
       ws.send(JSON.stringify(setupMsg));
-
-      captureInterval = setInterval(captureAndSend, CAPTURE_INTERVAL_MS);
-      setTimeout(captureAndSend, 800);
-      if (detectionMode === "manual") {
-        startMicCapture();
-      }
+      // Wait for setupComplete before sending frames — content sent before
+      // setup is acknowledged is dropped by the server.
     };
 
     ws.onmessage = async (event) => {
@@ -282,6 +278,15 @@ For pure casual conversation or questions you can answer directly yourself, resp
       let msg;
       try { msg = JSON.parse(text); } catch (e) {
         console.warn("[StudySnap] JSON parse failed:", e.message);
+        return;
+      }
+
+      // Start capture loop only after server confirms setup is complete
+      if (msg.setupComplete) {
+        console.log("[StudySnap] Setup complete — starting capture");
+        captureInterval = setInterval(captureAndSend, CAPTURE_INTERVAL_MS);
+        captureAndSend(); // first frame immediately
+        if (detectionMode === "manual") startMicCapture();
         return;
       }
 
@@ -354,9 +359,10 @@ For pure casual conversation or questions you can answer directly yourself, resp
         pendingText = "";
         console.log("[StudySnap] Turn complete. Full response:", JSON.stringify(fullText));
 
-        if (detectionMode === "auto" && fullText.startsWith("PROBLEM_DETECTED:") && latestBase64) {
-          const question = fullText.replace("PROBLEM_DETECTED:", "").trim();
-          showToast(question, latestBase64);
+        // Case-insensitive match — audio transcription may lowercase "PROBLEM_DETECTED:"
+        if (detectionMode === "auto" && latestBase64) {
+          const match = fullText.match(/problem[_\s]?detected[:\s]+(.+)/i);
+          if (match) showToast(match[1].trim(), latestBase64);
         }
       }
     };
@@ -406,11 +412,24 @@ For pure casual conversation or questions you can answer directly yourself, resp
       latestBase64 = base64;
       pendingText = "";
 
-      // Auto mode: include text prompt to trigger per-frame analysis.
-      // Manual mode: video only — Gemini responds to voice, not each frame.
+      // Auto mode: clientContent + turnComplete creates an explicit turn the model
+      // must respond to. realtimeInput.text is not a valid API field and is silently
+      // dropped — text must go through clientContent.
+      // Manual mode: realtimeInput.video provides visual context alongside mic audio.
       const frameMsg = detectionMode === "manual"
         ? { realtimeInput: { video: { data: base64, mimeType: "image/jpeg" } } }
-        : { realtimeInput: { video: { data: base64, mimeType: "image/jpeg" }, text: "Analyze this screen." } };
+        : {
+            clientContent: {
+              turns: [{
+                role: "user",
+                parts: [
+                  { inlineData: { mimeType: "image/jpeg", data: base64 } },
+                  { text: "Analyze this screen." },
+                ],
+              }],
+              turnComplete: true,
+            },
+          };
       ws.send(JSON.stringify(frameMsg));
     });
   }
