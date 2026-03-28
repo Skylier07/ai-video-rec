@@ -85,6 +85,23 @@ If no question is visible when they ask for videos, say: "I don't see a question
   ring.style.display = "none";
   root.appendChild(ring);
 
+  // Push-to-talk send button (manual mode only — appears above main button)
+  const speakBtn = document.createElement("button");
+  speakBtn.id = "studysnap-speak";
+  speakBtn.title = "Tap after speaking — send your question to the model";
+  speakBtn.textContent = "🎤";
+  speakBtn.style.display = "none";
+  root.appendChild(speakBtn);
+
+  speakBtn.addEventListener("click", () => {
+    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    pendingText = "";
+    ws.send(JSON.stringify({ clientContent: { turnComplete: true } }));
+    speakBtn.textContent = "⏳";
+    speakBtn.disabled = true;
+    console.log("[StudySnap] Turn complete sent — waiting for model response");
+  });
+
   btn.addEventListener("click", () => {
     if (isRecording) stopMonitoring(); else startMonitoring();
   });
@@ -96,6 +113,7 @@ If no question is visible when they ask for videos, say: "I don't see a question
     btn.textContent = "■";
     btn.title = "Stop StudySnap screen monitor";
     ring.style.display = "block";
+    if (detectionMode === "manual") speakBtn.style.display = "flex";
     openWebSocket();
   }
 
@@ -104,6 +122,9 @@ If no question is visible when they ask for videos, say: "I don't see a question
     btn.textContent = "🔴";
     btn.title = "Start StudySnap screen monitor";
     ring.style.display = "none";
+    speakBtn.style.display = "none";
+    speakBtn.textContent = "🎤";
+    speakBtn.disabled = false;
     dismissToast();
     stopMicCapture();
     stopPlayback();
@@ -280,6 +301,11 @@ If no question is visible when they ask for videos, say: "I don't see a question
             if (latestBase64) showToast(question, latestBase64);
           }
         }
+        // Re-enable speak button now that model has responded
+        if (isRecording && detectionMode === "manual") {
+          speakBtn.textContent = "🎤";
+          speakBtn.disabled = false;
+        }
       }
 
       const content = msg.serverContent;
@@ -318,7 +344,12 @@ If no question is visible when they ask for videos, say: "I don't see a question
           const question = fullText.replace("PROBLEM_DETECTED:", "").trim();
           showToast(question, latestBase64);
         }
-        // Manual mode: video trigger handled by find_videos toolCall above
+        // Manual mode: video trigger handled by find_videos toolCall above.
+        // Re-enable speak button after any model turn (e.g. casual responses).
+        if (isRecording && detectionMode === "manual") {
+          speakBtn.textContent = "🎤";
+          speakBtn.disabled = false;
+        }
       }
     };
 
@@ -335,6 +366,9 @@ If no question is visible when they ask for videos, say: "I don't see a question
         isRecording = false;
         btn.textContent = "🔴";
         ring.style.display = "none";
+        speakBtn.style.display = "none";
+        speakBtn.textContent = "🎤";
+        speakBtn.disabled = false;
       }
     };
   }
