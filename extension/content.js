@@ -95,22 +95,49 @@ Your ONLY job:
       setTimeout(captureAndSend, 800);
     };
 
-    ws.onmessage = (event) => {
+    ws.onmessage = async (event) => {
+      let text;
+      if (event.data instanceof Blob) {
+        text = await event.data.text();
+      } else {
+        text = event.data;
+      }
+
       let msg;
-      try { msg = JSON.parse(event.data); } catch { return; }
+      try { msg = JSON.parse(text); } catch (e) {
+        console.warn("[StudySnap] JSON parse failed:", e.message);
+        return;
+      }
+
+      // Log every message type for debugging
+      const keys = Object.keys(msg);
+      if (!keys.includes("serverContent")) {
+        console.log("[StudySnap] Non-content message:", JSON.stringify(msg).slice(0, 200));
+      }
 
       const content = msg.serverContent;
       if (!content) return;
 
       if (content.outputTranscription?.text) {
         pendingText += content.outputTranscription.text;
+        console.log("[StudySnap] Transcription chunk:", content.outputTranscription.text);
       }
 
-      if (content.turnComplete && latestBase64) {
+      // Also check modelTurn parts as fallback
+      if (content.modelTurn?.parts) {
+        for (const part of content.modelTurn.parts) {
+          if (part.text) {
+            pendingText += part.text;
+            console.log("[StudySnap] Model part:", part.text);
+          }
+        }
+      }
+
+      if (content.turnComplete) {
         const fullText = pendingText.trim();
         pendingText = "";
-        console.log("[StudySnap] Response:", fullText);
-        if (fullText.startsWith("PROBLEM_DETECTED:")) {
+        console.log("[StudySnap] Turn complete. Full response:", JSON.stringify(fullText));
+        if (fullText.startsWith("PROBLEM_DETECTED:") && latestBase64) {
           const question = fullText.replace("PROBLEM_DETECTED:", "").trim();
           showToast(question, latestBase64);
         }
@@ -135,7 +162,16 @@ Your ONLY job:
   // ── Frame capture ─────────────────────────────────────────────────────────
 
   function captureAndSend() {
-    if (!ws || ws.readyState !== WebSocket.OPEN) return;
+    if (!ws || ws.readyState !== WebSocket.OPEN) {
+      console.warn("[StudySnap] captureAndSend skipped — WS not open, state:", ws?.readyState);
+      return;
+    }
+    if (!chrome.runtime?.id) {
+      console.error("[StudySnap] Extension context invalidated — please refresh this page.");
+      stopMonitoring();
+      return;
+    }
+    console.log("[StudySnap] Requesting frame capture...");
 
     // Ask the background service worker to capture the visible tab
     chrome.runtime.sendMessage({ action: "captureTab" }, (response) => {
@@ -143,9 +179,13 @@ Your ONLY job:
         console.warn("[StudySnap] captureTab error:", chrome.runtime.lastError.message);
         return;
       }
-      if (!response?.dataUrl) return;
+      if (!response?.dataUrl) {
+        console.warn("[StudySnap] captureTab returned no dataUrl:", response);
+        return;
+      }
 
       const base64 = response.dataUrl.replace(/^data:image\/\w+;base64,/, "");
+      console.log("[StudySnap] Frame captured, base64 length:", base64.length, "— sending to model");
       latestBase64 = base64;
       pendingText = "";
 
