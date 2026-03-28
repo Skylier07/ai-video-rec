@@ -9,7 +9,7 @@ Update it after every logic block or fix.
 
 | Agent | Scope |
 |-------|-------|
-| **Claude** | `backend/` core endpoints, `frontend/` API wiring (lib/api.ts, types/, page rewrites) |
+| **Claude** | `backend/` core endpoints, `frontend/` API wiring (lib/api.ts, types/, page rewrites), `extension/` Chrome extension |
 | **Gemini (Full Stack Auth)** | `/signin` route, SQLAlchemy DB models, OAuth flow, `backend/` auth endpoints |
 
 **Branch:** `feat/backend-current-task`
@@ -147,6 +147,7 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | 2026-03-27 | Claude | 🔨 **SCREEN RECORDER FIXES** — Two bugs fixed: (1) `onclose` now logs WS close code/reason and shows it in error toast — previously silent, making diagnosis impossible; (2) replaced `sendRealtimeInput` with `sendClientContent + turnComplete:true` so each frame is an explicit user turn the model must answer (fixes silent no-detection). If connection still drops, the error toast will now show the exact server reason (check for model name / auth issues). |
 | 2026-03-27 | Claude | 🔨 **SCREEN RECORDER 1011 FIX (attempt 1)** — Fixed `sendClientContent` → `sendRealtimeInput({ video, text })` for images (SDK docs: "use sendRealtimeInput for video frames"). Fixed `Modality` enum type error. Fixed model name. 1011 persisted. |
 | 2026-03-27 | Claude | ✅ **SCREEN RECORDER 1011 RESOLVED** — True root cause: `responseModalities: [Modality.TEXT]` is unsupported by the Live API. The API only supports AUDIO output — all SDK examples confirm this; server returns 1011 when it can't fulfill a TEXT-only request. Fix: switched to `responseModalities: [Modality.AUDIO]` + `outputAudioTranscription: {}`. `onmessage` now reads `serverContent.outputTranscription.text` (transcript of model's audio) instead of `modelTurn.parts[].text`. **Confirmed working by user.** |
+| 2026-03-27 | Claude | 🔨 **STARTING: Chrome Extension** — Building `extension/` — a standalone Chrome extension that injects the StudySnap screen monitor overlay onto any webpage. Same Gemini Live API logic as ScreenRecorder.tsx. When problem detected, opens `localhost:3000/processing` with the captured frame. **Gemini: do not touch `extension/` folder.** |
 
 ---
 
