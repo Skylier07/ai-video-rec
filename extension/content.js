@@ -56,11 +56,13 @@ If no question is visible when they ask for videos, say: "I don't see a question
     }
   });
 
-  // Keep detectionMode in sync across ALL tabs when storage changes
+  // Keep detectionMode in sync across ALL tabs when storage changes.
+  // If currently recording, stop immediately — the active session used the old mode's setup.
   chrome.storage.onChanged.addListener((changes, namespace) => {
     if (namespace === "local" && changes.detection_mode) {
       detectionMode = changes.detection_mode.newValue;
       console.log("[StudySnap] Detection mode updated:", detectionMode);
+      if (isRecording) stopMonitoring();
     }
   });
 
