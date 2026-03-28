@@ -160,7 +160,7 @@ If they ask for screen videos but you can't see a question AND they haven't name
   }
 
   function startMicCapture() {
-    navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+    navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: true, autoGainControl: true }, video: false })
       .then((stream) => {
         micStream = stream;
         micAudioContext = new AudioContext({ sampleRate: 16000 });
