@@ -1,3 +1,4 @@
+import asyncio
 from fastapi import APIRouter
 from app.models import RankRequest, RankResponse, VideoSegment
 from app.services.transcripts import get_transcript
@@ -41,7 +42,7 @@ def _normalize_segment_times(
     model_start = max(0, _to_int(proposed_start, cue_starts[0]))
     model_end = _to_int(proposed_end, model_start + 60)
 
-    prior_cues = [cue_start for cue_start in cue_starts if cue_start <= model_start]
+    prior_cues = [s for s in cue_starts if s <= model_start]
     anchored_start = prior_cues[-1] if prior_cues else cue_starts[0]
 
     max_transcript_end = max(cue_ends)
@@ -51,34 +52,41 @@ def _normalize_segment_times(
     return anchored_start, clamped_end
 
 
-@router.post("/rank", response_model=RankResponse)
-def rank(request: RankRequest):
-    all_segments: list[VideoSegment] = []
+async def _process_video(video, concepts: list[str]) -> list[VideoSegment]:
+    """Fetch transcript and rank segments for a single video — runs concurrently."""
+    transcript = await asyncio.to_thread(get_transcript, video.video_id)
+    if not transcript:
+        return []
 
-    for video in request.videos:
-        transcript = get_transcript(video.video_id)
-        if not transcript:
-            continue
+    segments = await asyncio.to_thread(
+        rank_segments,
+        concepts=concepts,
+        video_id=video.video_id,
+        title=video.title,
+        transcript=transcript,
+    )
 
-        segments = rank_segments(
-            concepts=request.concepts,
-            video_id=video.video_id,
-            title=video.title,
+    result = []
+    for seg in segments:
+        start_time, end_time = _normalize_segment_times(
             transcript=transcript,
+            proposed_start=seg.get("start_time"),
+            proposed_end=seg.get("end_time"),
         )
+        result.append(VideoSegment(
+            video_id=str(seg.get("video_id", video.video_id)),
+            title=str(seg.get("title", video.title)),
+            start_time=start_time,
+            end_time=end_time,
+            explanation=str(seg.get("explanation", "")),
+        ))
+    return result
 
-        for seg in segments:
-            start_time, end_time = _normalize_segment_times(
-                transcript=transcript,
-                proposed_start=seg.get("start_time"),
-                proposed_end=seg.get("end_time"),
-            )
-            all_segments.append(VideoSegment(
-                video_id=str(seg.get("video_id", video.video_id)),
-                title=str(seg.get("title", video.title)),
-                start_time=start_time,
-                end_time=end_time,
-                explanation=str(seg.get("explanation", "")),
-            ))
 
+@router.post("/rank", response_model=RankResponse)
+async def rank(request: RankRequest):
+    results_per_video = await asyncio.gather(
+        *[_process_video(video, request.concepts) for video in request.videos]
+    )
+    all_segments = [seg for segs in results_per_video for seg in segs]
     return RankResponse(segments=all_segments[:3])
