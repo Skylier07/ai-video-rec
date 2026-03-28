@@ -120,7 +120,7 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | Task 2: Layouts & Nav | ✅ Done | Recreated Top/Side/Bottom bars matching Stitch UI |
 | Task 3: Static Screens | ✅ Done | Scaffolded `/`, `/processing`, `/results` statically |
 | Task 4: API Integration | ✅ Done | Full Home→Processing→Results flow wired, localStorage bridge, real YouTube thumbnails → iframes, Reveal Answer gate |
-| Task 5: Screen Recorder | ✅ Done | Gemini Live API (`gemini-2.0-flash-live-001`), floating button + toast, wired to /processing pipeline |
+| Task 5: Screen Recorder | ✅ Done | Gemini Live API (`gemini-3.1-flash-live-preview`), floating button + toast, wired to /processing pipeline |
 
 ---
 
@@ -141,8 +141,9 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | 2026-03-27 | Claude | ✅ **FRONTEND WIRING COMPLETE** — `src/lib/api.ts`, `src/types/index.ts` created. All 3 pages rewritten: drag-drop upload, sequential API calls on /processing, real video cards with click-to-play iframes on /results, Reveal Answer unlocks after first video watch. |
 | 2026-03-27 | Gemini | ✅ **AUTH COMPLETE** — NextAuth v5 + Google OAuth + Postgres/SQLAlchemy + Alembic migrations. Pages moved to `app/(dashboard)/` route group with auth-protected layout. `/signin` standalone. |
 | 2026-03-27 | Claude | 🔨 **IN PROGRESS: Screen Recorder feature** — See spec at `docs/superpowers/specs/2026-03-27-screen-recorder-design.md` |
+| 2026-03-27 | Claude | 📝 **MODEL NAME CLARIFIED** — ScreenRecorder Live API model is `gemini-3.1-flash-live-preview` (confirmed by user). Updated all references in CLAUDE.md and ScreenRecorder.tsx. |
 | 2026-03-27 | Claude | ✅ **TIMESTAMP PRECISION IMPROVEMENT** — `/rank` now anchors Gemini segment times to real transcript cue boundaries and clamps segment ranges; results UI now embeds clips with `start` + `end` and adds direct `Open @ timestamp` links. Added rank test for anchoring/clamping behavior. |
-| 2026-03-27 | Claude | ✅ **SCREEN RECORDER COMPLETE** — `frontend/src/components/ScreenRecorder.tsx` built and mounted in `app/layout.tsx`. Uses `@google/genai` Live API + `gemini-2.0-flash-live-001`. Sends canvas frames every 5s, detects homework problems, shows toast → "Find Videos" routes to /processing. Shift+S for manual scan. Requires `NEXT_PUBLIC_GEMINI_API_KEY` in `.env.local`. |
+| 2026-03-27 | Claude | ✅ **SCREEN RECORDER COMPLETE** — `frontend/src/components/ScreenRecorder.tsx` built and mounted in `app/layout.tsx`. Uses `@google/genai` Live API + `gemini-3.1-flash-live-preview`. Sends canvas frames every 5s, detects homework problems, shows toast → "Find Videos" routes to /processing. Shift+S for manual scan. Requires `NEXT_PUBLIC_GEMINI_API_KEY` in `.env.local`. |
 
 ---
 
@@ -152,7 +153,7 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 
 **ScreenRecorder component is complete** (`frontend/src/components/ScreenRecorder.tsx`):
 - Floating 🔴 button (bottom-left) starts a screen capture session
-- Sends frames every 5s to `gemini-2.0-flash-live-001` via Live API WebSocket
+- Sends frames every 5s to `gemini-3.1-flash-live-preview` via Live API WebSocket
 - When a homework problem is detected: toast appears (bottom-right) with "Find Videos →"
 - "Find Videos" stops recording, saves frame to `localStorage["studysnap_input"]`, routes to `/processing`
 - Currently mounted in `app/layout.tsx` — **after your auth branch merges, please move `<ScreenRecorder />` to `app/(dashboard)/layout.tsx`** so it only shows for authenticated users

@@ -19,7 +19,8 @@ function SegmentCard({
   isPlaying: boolean;
   onPlay: () => void;
 }) {
-  const embedUrl = `https://www.youtube.com/embed/${segment.video_id}?start=${segment.start_time}&autoplay=1&rel=0`;
+  const embedUrl = `https://www.youtube.com/embed/${segment.video_id}?start=${segment.start_time}&end=${segment.end_time}&autoplay=1&rel=0`;
+  const watchUrl = `https://www.youtube.com/watch?v=${segment.video_id}&t=${segment.start_time}s`;
   const thumbnailUrl = `https://img.youtube.com/vi/${segment.video_id}/mqdefault.jpg`;
   const startStr = formatTime(segment.start_time);
   const endStr = formatTime(segment.end_time);
@@ -66,9 +67,19 @@ function SegmentCard({
           {segment.title}
         </h4>
         <p className="text-xs text-on-surface-variant line-clamp-2">{segment.explanation}</p>
-        <div className="mt-3 flex items-center gap-2">
-          <span className="w-2 h-2 rounded-full bg-secondary"></span>
-          <span className="text-[10px] font-black text-outline uppercase tracking-widest">Relevant Segment</span>
+        <div className="mt-3 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-secondary"></span>
+            <span className="text-[10px] font-black text-outline uppercase tracking-widest">Relevant Segment</span>
+          </div>
+          <a
+            href={watchUrl}
+            target="_blank"
+            rel="noreferrer"
+            className="text-[10px] font-black text-primary uppercase tracking-widest hover:text-secondary transition-colors"
+          >
+            Open @ {startStr}
+          </a>
         </div>
       </div>
     </div>

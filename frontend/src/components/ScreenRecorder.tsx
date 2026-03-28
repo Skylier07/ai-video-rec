@@ -13,7 +13,7 @@ Your ONLY job:
   NO_PROBLEM
 - Never add any other text, explanation, or commentary.`;
 
-const MODEL = "gemini-2.0-flash-live-preview-04-09";
+const MODEL = "gemini-3.1-flash-live-preview";
 const CAPTURE_INTERVAL_MS = 5000;
 
 export default function ScreenRecorder() {
