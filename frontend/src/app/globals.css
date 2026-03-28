@@ -1,7 +1,7 @@
 @import "tailwindcss";
 @import "katex/dist/katex.min.css";
 
-@theme inline {
+@theme {
   --color-surface-variant: #e3e1e9;
   --color-on-tertiary-fixed-variant: #5c4300;
   --color-on-secondary-fixed: #241a00;
@@ -109,6 +109,76 @@
 @theme {
   --animate-spin-slow: spin 3s linear infinite;
 }
+
+/* ── Dark / Black Theme ─────────────────────────────────────── */
+.dark {
+  --color-background: #0a0a12;
+  --color-surface: #0a0a12;
+  --color-surface-bright: #1c1c28;
+  --color-surface-dim: #07070e;
+  --color-surface-container-lowest: #07070e;
+  --color-surface-container-low: #10101a;
+  --color-surface-container: #16161f;
+  --color-surface-container-high: #1c1c28;
+  --color-surface-container-highest: #232330;
+
+  --color-on-background: #e4e2f2;
+  --color-on-surface: #e4e2f2;
+  --color-on-surface-variant: #c7c5d6;
+
+  --color-primary: #b6c4ff;
+  --color-on-primary: #00236f;
+  --color-primary-container: #1e3a8a;
+  --color-on-primary-container: #dce1ff;
+  --color-primary-fixed: #1e3a8a;
+  --color-primary-fixed-dim: #4059aa;
+  --color-inverse-primary: #4059aa;
+
+  --color-secondary: #fed65b;
+  --color-on-secondary: #241a00;
+  --color-secondary-container: #3d2e00;
+  --color-on-secondary-container: #ffe088;
+  --color-secondary-fixed: #3d2e00;
+  --color-secondary-fixed-dim: #e9c349;
+  --color-on-secondary-fixed: #241a00;
+  --color-on-secondary-fixed-variant: #574500;
+
+  --color-tertiary: #f9bd22;
+  --color-tertiary-container: #261a00;
+  --color-tertiary-fixed: #261a00;
+  --color-tertiary-fixed-dim: #f9bd22;
+  --color-on-tertiary: #241a00;
+  --color-on-tertiary-container: #d9a300;
+  --color-on-tertiary-fixed: #261a00;
+  --color-on-tertiary-fixed-variant: #5c4300;
+
+  --color-outline: #8f909e;
+  --color-outline-variant: #2c2c3c;
+  --color-surface-variant: #25253a;
+
+  --color-error: #ffb4ab;
+  --color-on-error: #690005;
+  --color-error-container: #93000a;
+  --color-on-error-container: #ffdad6;
+
+  --color-inverse-surface: #e4e2f2;
+  --color-inverse-on-surface: #2f3036;
+  --color-surface-tint: #b6c4ff;
+}
+
+.dark .skeleton-shimmer {
+  background: linear-gradient(90deg, #16161f 25%, #1c1c28 50%, #16161f 75%);
+  background-size: 200% 100%;
+  animation: shimmer 2s infinite linear;
+}
+
+.dark .loading-ring {
+  border-top-color: #b6c4ff;
+  border-right-color: #fed65b;
+  border-bottom-color: #b6c4ff;
+  border-left-color: #fed65b;
+}
+/* ──────────────────────────────────────────────────────────── */
 
 body {
   background: var(--color-background);

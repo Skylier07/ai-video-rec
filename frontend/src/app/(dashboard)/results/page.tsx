@@ -288,7 +288,7 @@ export default function Results() {
                 onClick={handleReveal}
                 className={`flex items-center justify-center gap-3 w-full py-4 font-bold rounded-lg transition-all ${
                   watchedCount > 0
-                    ? "bg-secondary text-on-secondary-fixed hover:scale-[1.02] active:scale-[0.98] shadow-md"
+                    ? "gold-gradient text-on-secondary-fixed hover:scale-[1.02] active:scale-[0.98] shadow-lg shadow-secondary/40"
                     : "bg-surface-container text-outline cursor-not-allowed opacity-60 border border-outline-variant/20"
                 }`}
               >

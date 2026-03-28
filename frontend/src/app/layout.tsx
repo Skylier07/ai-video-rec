@@ -3,6 +3,7 @@ import { Manrope } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/Providers';
 import { auth } from '@/auth';
+import { ThemeInitScript } from '@/components/ThemeToggleSetting';
 
 const manrope = Manrope({
   subsets: ['latin'],
@@ -25,6 +26,7 @@ export default async function RootLayout({
   return (
     <html lang="en" className={`light ${manrope.variable}`}>
        <head>
+          <ThemeInitScript />
           <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
        </head>
       {/* We apply base surface styles here. Inner layouts can wrap navs as needed */}
