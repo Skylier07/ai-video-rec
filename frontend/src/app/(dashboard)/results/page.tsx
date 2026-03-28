@@ -158,12 +158,43 @@ export default function Results() {
   const [solutionLoading, setSolutionLoading] = useState(false);
   const [solutionError, setSolutionError] = useState<string | null>(null);
   const [revealedSteps, setRevealedSteps] = useState(0);
+  // true when user clicked Reveal while the background fetch was still in-flight
+  const [pendingReveal, setPendingReveal] = useState(false);
 
   useEffect(() => {
     if (!results) {
       router.replace("/");
     }
   }, [results, router]);
+
+  // Pre-fetch solution as soon as results are shown — display is still gated by the button
+  useEffect(() => {
+    if (!results) return;
+    const input =
+      typeof window !== "undefined"
+        ? JSON.parse(localStorage.getItem("studysnap_input") || "{}")
+        : {};
+    setSolutionLoading(true);
+    solveQuestion(
+      results.question,
+      input.imageBase64 ?? null,
+      input.imageMimeType ?? null,
+    )
+      .then((res) => {
+        setSolution(res);
+        // If the user already clicked Reveal while we were loading, auto-show first step
+        setPendingReveal((wasPending) => {
+          if (wasPending) setRevealedSteps(1);
+          return false;
+        });
+      })
+      .catch((e: any) => {
+        setSolutionError(e.message || "Failed to generate solution");
+      })
+      .finally(() => {
+        setSolutionLoading(false);
+      });
+  }, [results]); // eslint-disable-line react-hooks/exhaustive-deps
 
   function handlePlay(id: string) {
     if (playingId !== id) {
@@ -172,31 +203,17 @@ export default function Results() {
     }
   }
 
-  async function handleReveal() {
-    if (!results || solutionLoading) return;
+  function handleReveal() {
+    if (!results || watchedCount === 0) return;
     if (solution) {
-      // Already have solution — reveal next step
+      // Solution already ready — reveal next step instantly
       setRevealedSteps((prev) => Math.min(prev + 1, solution.steps.length + 1));
       return;
     }
-    // Fetch solution from API
-    setSolutionLoading(true);
-    setSolutionError(null);
-    try {
-      const input = typeof window !== "undefined"
-        ? JSON.parse(localStorage.getItem("studysnap_input") || "{}")
-        : {};
-      const res = await solveQuestion(
-        results.question,
-        input.imageBase64 ?? null,
-        input.imageMimeType ?? null,
-      );
-      setSolution(res);
-      setRevealedSteps(1); // Show first step immediately
-    } catch (e: any) {
-      setSolutionError(e.message || "Failed to generate solution");
-    } finally {
-      setSolutionLoading(false);
+    if (solutionLoading) {
+      // Background fetch still in-flight — queue the reveal so it fires the moment it lands
+      setPendingReveal(true);
+      return;
     }
   }
 
@@ -274,7 +291,7 @@ export default function Results() {
 
               {/* Reveal Answer Button */}
               <button
-                disabled={watchedCount === 0 || solutionLoading}
+                disabled={watchedCount === 0}
                 onClick={handleReveal}
                 className={`flex items-center justify-center gap-3 w-full py-4 font-bold rounded-lg transition-all ${
                   watchedCount > 0
@@ -282,10 +299,10 @@ export default function Results() {
                     : "bg-surface-container text-outline cursor-not-allowed opacity-60 border border-outline-variant/20"
                 }`}
               >
-                {solutionLoading ? (
+                {pendingReveal ? (
                   <>
                     <div className="w-5 h-5 border-2 border-current border-t-transparent rounded-full animate-spin" />
-                    Generating Solution…
+                    Loading Solution…
                   </>
                 ) : solution ? (
                   <>
@@ -297,13 +314,13 @@ export default function Results() {
                 ) : (
                   <>
                     <span className="material-symbols-outlined">{watchedCount > 0 ? "auto_awesome" : "lock"}</span>
-                    {watchedCount > 0 ? "Reveal Answer" : "Reveal Answer"}
+                    Reveal Answer
                   </>
                 )}
               </button>
               <p className="text-center text-[10px] text-outline mt-3 font-semibold uppercase tracking-widest">
-                {solutionLoading
-                  ? "Using Gemini 3.1 Pro — this may take a moment"
+                {pendingReveal
+                  ? "Almost ready — loading solution…"
                   : solution
                     ? revealedSteps >= solution.steps.length + 1
                       ? "Complete solution shown below"
