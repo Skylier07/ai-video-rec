@@ -120,6 +120,7 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | Task 2: Layouts & Nav | ✅ Done | Recreated Top/Side/Bottom bars matching Stitch UI |
 | Task 3: Static Screens | ✅ Done | Scaffolded `/`, `/processing`, `/results` statically |
 | Task 4: API Integration | ✅ Done | Full Home→Processing→Results flow wired, localStorage bridge, real YouTube thumbnails → iframes, Reveal Answer gate |
+| Task 5: Screen Recorder | ✅ Done | Gemini Live API (`gemini-2.0-flash-live-001`), floating button + toast, wired to /processing pipeline |
 
 ---
 
@@ -140,16 +141,38 @@ All endpoints live at `http://localhost:8000` (dev) / Railway URL (prod).
 | 2026-03-27 | Claude | ✅ **FRONTEND WIRING COMPLETE** — `src/lib/api.ts`, `src/types/index.ts` created. All 3 pages rewritten: drag-drop upload, sequential API calls on /processing, real video cards with click-to-play iframes on /results, Reveal Answer unlocks after first video watch. |
 | 2026-03-27 | Gemini | ✅ **AUTH COMPLETE** — NextAuth v5 + Google OAuth + Postgres/SQLAlchemy + Alembic migrations. Pages moved to `app/(dashboard)/` route group with auth-protected layout. `/signin` standalone. |
 | 2026-03-27 | Claude | 🔨 **IN PROGRESS: Screen Recorder feature** — See spec at `docs/superpowers/specs/2026-03-27-screen-recorder-design.md` |
+| 2026-03-27 | Claude | ✅ **TIMESTAMP PRECISION IMPROVEMENT** — `/rank` now anchors Gemini segment times to real transcript cue boundaries and clamps segment ranges; results UI now embeds clips with `start` + `end` and adds direct `Open @ timestamp` links. Added rank test for anchoring/clamping behavior. |
+| 2026-03-27 | Claude | ✅ **SCREEN RECORDER COMPLETE** — `frontend/src/components/ScreenRecorder.tsx` built and mounted in `app/layout.tsx`. Uses `@google/genai` Live API + `gemini-2.0-flash-live-001`. Sends canvas frames every 5s, detects homework problems, shows toast → "Find Videos" routes to /processing. Shift+S for manual scan. Requires `NEXT_PUBLIC_GEMINI_API_KEY` in `.env.local`. |
 
 ---
 
 ## Notes for Gemini
 
-### Auth is done — nice work! A few things to coordinate:
+### Screen Recorder is live — here's what needs your attention:
 
-- Claude is adding `frontend/src/components/ScreenRecorder.tsx` — a floating button (bottom-left, all pages) that starts a screen capture session and detects homework problems via Gemini
-- **Where to mount it**: Claude will add `<ScreenRecorder />` inside `app/(dashboard)/layout.tsx` (after `<BottomNavBar />`), so it only appears for authenticated users — **please don't remove this when you make changes to that file**
-- The `app/page.tsx`, `processing/page.tsx`, `results/page.tsx` files on the `feat/backend-current-task` branch are the wired versions — Gemini's `(dashboard)/` move already contains them. When merging, keep the `(dashboard)/` versions.
-- `ScreenRecorder` calls the existing `/analyze` endpoint — no new backend routes needed
-- Backend CORS is `allow_origins=["*"]` for dev — fine for now
-- **Merge note**: The old `app/page.tsx`, `app/processing/page.tsx`, `app/results/page.tsx` on Claude's branch will need to be deleted when merging with the `(dashboard)/` restructure. The content is identical — Gemini's move preserved it correctly.
+**ScreenRecorder component is complete** (`frontend/src/components/ScreenRecorder.tsx`):
+- Floating 🔴 button (bottom-left) starts a screen capture session
+- Sends frames every 5s to `gemini-2.0-flash-live-001` via Live API WebSocket
+- When a homework problem is detected: toast appears (bottom-right) with "Find Videos →"
+- "Find Videos" stops recording, saves frame to `localStorage["studysnap_input"]`, routes to `/processing`
+- Currently mounted in `app/layout.tsx` — **after your auth branch merges, please move `<ScreenRecorder />` to `app/(dashboard)/layout.tsx`** so it only shows for authenticated users
+
+**What Gemini should work on next:**
+
+1. **Polish the results page UI** — The `/results` page currently shows raw video cards. It could use:
+   - A nicer "concepts learned" section at the top
+   - Progress indicator showing which concepts each video covers
+   - Better empty state when `/rank` returns no segments (YouTube rate limit scenario)
+
+2. **Loading/skeleton states** — The `/processing` page shows text status messages. Consider adding skeleton card placeholders so the UI feels more alive while the 3 API calls run.
+
+3. **Mobile responsiveness** — Check the nav bars and video grid on narrow screens (the BottomNavBar may overlap the ScreenRecorder button on mobile — the recorder button is `bottom-6 left-6` and BottomNavBar is also at the bottom).
+
+4. **Merge auth branch** — When ready to merge `feat/frontend-ui-updates` into `feat/backend-current-task`:
+   - Keep `app/(dashboard)/` page versions (delete old `app/page.tsx`, `app/processing/page.tsx`, `app/results/page.tsx` from Claude's branch — content is identical)
+   - Move `<ScreenRecorder />` mount from `app/layout.tsx` → `app/(dashboard)/layout.tsx`
+
+**Environment variable Gemini needs to know about:**
+- `NEXT_PUBLIC_GEMINI_API_KEY` — add to `frontend/.env.local` (same key as backend `GEMINI_API_KEY`). Required for the Screen Recorder feature.
+
+**No backend changes needed** — ScreenRecorder uses the Live API client-side directly via `@google/genai` npm package (already installed).
