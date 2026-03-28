@@ -53,6 +53,20 @@ async def save_history(payload: SaveHistoryRequest, db: AsyncSession = Depends(g
     
     return {"status": "success", "id": history_entry.id}
 
+@router.delete("/{user_id}")
+async def clear_history(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+    """Delete all history entries for a user."""
+    result = await db.execute(select(User).where(User.id == user_id))
+    if not result.scalars().first():
+        raise HTTPException(status_code=404, detail="User not found")
+
+    await db.execute(
+        History.__table__.delete().where(History.user_id == user_id)
+    )
+    await db.commit()
+    return {"status": "cleared"}
+
+
 @router.get("/{user_id}", response_model=List[HistoryResponse])
 async def get_history(user_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     """

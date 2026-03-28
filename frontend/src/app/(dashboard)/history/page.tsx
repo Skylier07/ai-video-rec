@@ -1,6 +1,7 @@
 import { auth } from "@/auth";
 import { getHistory } from "@/lib/api";
 import RevisitButton from "@/components/RevisitButton";
+import ClearHistoryButton from "@/components/ClearHistoryButton";
 
 export default async function HistoryPage() {
   const session = await auth();
@@ -31,6 +32,7 @@ export default async function HistoryPage() {
             <span className="material-symbols-outlined text-sm">sort</span>
             Newest First
           </button>
+          {userId && <ClearHistoryButton userId={userId} />}
         </div>
       </header>
 

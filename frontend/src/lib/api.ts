@@ -52,6 +52,15 @@ export async function saveHistory(payload: HistoryPayload): Promise<{ status: st
   return post("/history", payload);
 }
 
+export async function clearHistory(userId: string): Promise<{ status: string }> {
+  const res = await fetch(`${API_BASE}/history/${userId}`, { method: "DELETE" });
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`/history/${userId} DELETE failed (${res.status}): ${text}`);
+  }
+  return res.json();
+}
+
 export async function getHistory(userId: string): Promise<any[]> {
   const res = await fetch(`${API_BASE}/history/${userId}`, {
     method: "GET",
