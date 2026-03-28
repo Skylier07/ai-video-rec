@@ -23,6 +23,7 @@ export function getStoredTheme(): Theme {
 export function ThemeInitScript() {
   return (
     <script
+      suppressHydrationWarning
       dangerouslySetInnerHTML={{
         __html: `(function(){var t=localStorage.getItem('${THEME_KEY}');if(t==='dark')document.documentElement.classList.add('dark');})();`,
       }}
