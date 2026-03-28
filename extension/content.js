@@ -239,9 +239,9 @@ If no question is visible when they ask for videos, say: "I don't see a question
             role: "user",
           },
           ...(detectionMode === "manual" && {
-            // Disable VAD so we control turn boundaries with activityStart/End
-            realtimeSpeechConfig: {
-              voiceActivityDetection: { disabled: true },
+            // Disable automatic VAD so we control turn boundaries with activityStart/End
+            realtimeInputConfig: {
+              automaticActivityDetection: { disabled: true },
             },
             tools: [{
               functionDeclarations: [{
