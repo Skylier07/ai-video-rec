@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Manrope } from 'next/font/google';
 import './globals.css';
 import { TopNavBar, SideNavBar, BottomNavBar } from '@/components/Navigation';
+import ScreenRecorder from '@/components/ScreenRecorder';
 
 const manrope = Manrope({
   subsets: ['latin'],
@@ -35,6 +36,7 @@ export default function RootLayout({
           </main>
         </div>
         <BottomNavBar />
+        <ScreenRecorder />
       </body>
     </html>
   );
