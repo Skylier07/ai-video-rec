@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { Manrope } from 'next/font/google';
 import './globals.css';
 import { Providers } from '@/components/Providers';
+import { auth } from '@/auth';
 
 const manrope = Manrope({
   subsets: ['latin'],
@@ -14,11 +15,13 @@ export const metadata: Metadata = {
   description: 'Upload a photo of a problem and get verified video snippets.',
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
+
   return (
     <html lang="en" className={`light ${manrope.variable}`}>
        <head>
@@ -26,7 +29,7 @@ export default function RootLayout({
        </head>
       {/* We apply base surface styles here. Inner layouts can wrap navs as needed */}
       <body className="bg-surface font-body text-on-surface antialiased min-h-screen selection:bg-secondary-fixed selection:text-on-secondary-fixed">
-        <Providers>
+        <Providers session={session}>
           {children}
         </Providers>
       </body>

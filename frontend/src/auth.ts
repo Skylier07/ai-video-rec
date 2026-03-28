@@ -4,7 +4,7 @@ import Google from "next-auth/providers/google"
 export const { handlers, signIn, signOut, auth } = NextAuth({
   providers: [Google],
   callbacks: {
-    async signIn({ user, account, profile }) {
+    async signIn({ user, account }) {
       // Proxy the user to our completely autonomous FastAPI database!
       // This sends the email safely to our backend to ensure they are created in Postgres.
       try {
@@ -37,9 +37,21 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       }
       return true;
     },
+    async jwt({ token, user }) {
+      // Persist profile data from provider into JWT so server-rendered nav can show avatar.
+      if (user?.id) {
+        token.sub = user.id;
+      }
+      // NextAuth handles the rest natively (mapping user.image to token.picture, etc.)
+      return token;
+    },
     async session({ session, token }) {
       if (token?.sub) {
-        session.user.id = token.sub; 
+        session.user.id = token.sub as string; 
+      }
+      // Pass the picture natively if somehow NextAuth didn't (though v5 usually does automatically)
+      if (token?.picture) {
+        session.user.image = token.picture as string;
       }
       return session;
     }

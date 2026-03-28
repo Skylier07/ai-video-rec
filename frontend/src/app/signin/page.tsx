@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import Image from "next/image";
 import { signIn } from "next-auth/react";
 
 export default function SignInPage() {
@@ -74,7 +73,7 @@ export default function SignInPage() {
           {/* Footer Link */}
           <div className="mt-10 text-center">
             <p className="text-sm text-on-surface-variant">
-                Don't have an account? 
+                Don&apos;t have an account? 
                 <a className="text-primary font-extrabold hover:text-secondary-fixed-dim transition-colors ml-1" href="#">Sign Up</a>
             </p>
           </div>

@@ -2,9 +2,12 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import type { Session } from 'next-auth';
+import { useSession } from 'next-auth/react';
 
 export function TopNavBar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
   
   const isActive = (path: string) => pathname === path;
   return (
@@ -34,20 +37,20 @@ export function TopNavBar() {
           >
             History
           </Link>
-          <Link
-            className="font-manrope font-bold tracking-tight text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10 transition-colors duration-300 px-3 py-1 rounded-lg"
-            href="/history"
-          >
-            Vault
-          </Link>
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <button className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-all text-[#00236f] dark:text-[#e9c349]">
-          <span className="material-symbols-outlined">account_circle</span>
-        </button>
-        <button className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-white/10 transition-all text-[#00236f] dark:text-[#e9c349]">
-          <span className="material-symbols-outlined">settings</span>
+        <button className="relative w-10 h-10 rounded-full overflow-hidden hover:ring-2 hover:ring-[#e9c349] transition-all bg-slate-100 dark:bg-white/10 flex items-center justify-center">
+          {session?.user?.image ? (
+            <img 
+              src={session.user.image} 
+              alt={session.user.name || "User Profile"} 
+              className="w-full h-full object-cover"
+              referrerPolicy="no-referrer"
+            />
+          ) : (
+            <span className="material-symbols-outlined text-[#00236f] dark:text-[#e9c349]">account_circle</span>
+          )}
         </button>
       </div>
       <div className="bg-gradient-to-r from-[#00236f] to-[#1e3a8a] h-[2px] w-full absolute bottom-0 left-0"></div>
@@ -63,7 +66,7 @@ export function SideNavBar() {
     <aside className="h-screen w-64 hidden lg:flex flex-col border-r border-slate-100 dark:border-white/5 bg-[#faf8ff] dark:bg-[#001a4d] p-4 gap-4">
       <div className="mb-8 px-2">
         <h2 className="text-xl font-black text-[#00236f] dark:text-[#e9c349] leading-tight">
-          Academic Vault
+          Study Archive
         </h2>
         <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
           Your Knowledge Hub
@@ -85,19 +88,6 @@ export function SideNavBar() {
         </Link>
         <Link
           className={`flex items-center gap-3 p-3 rounded-lg font-bold hover:translate-x-1 transition-all duration-200 ${
-            isActive('/library')
-              ? 'text-[#00236f] dark:text-[#e9c349] bg-[#e3e1e9] dark:bg-[#1e3a8a]'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'
-          }`}
-          href="/history"
-        >
-          <span className="material-symbols-outlined">library_books</span>
-          <span className="font-manrope text-sm font-semibold uppercase tracking-widest">
-            Academic Vault
-          </span>
-        </Link>
-        <Link
-          className={`flex items-center gap-3 p-3 rounded-lg font-bold hover:translate-x-1 transition-all duration-200 ${
             isActive('/history')
               ? 'text-[#00236f] dark:text-[#e9c349] bg-[#e3e1e9] dark:bg-[#1e3a8a]'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'
@@ -107,15 +97,6 @@ export function SideNavBar() {
           <span className="material-symbols-outlined">history</span>
           <span className="font-manrope text-sm font-semibold uppercase tracking-widest">
             History
-          </span>
-        </Link>
-        <Link
-          className="flex items-center gap-3 p-3 text-slate-600 dark:text-slate-400 hover:translate-x-1 transition-transform duration-200"
-          href="#"
-        >
-          <span className="material-symbols-outlined">style</span>
-          <span className="font-manrope text-sm font-semibold uppercase tracking-widest">
-            Flashcards
           </span>
         </Link>
       </nav>

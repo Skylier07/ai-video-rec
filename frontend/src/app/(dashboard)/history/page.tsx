@@ -1,5 +1,4 @@
 import Link from "next/link";
-import { auth } from "@/auth";
 
 // Temporary Mock Data for UI rendering until Claude wires the Backend
 const mockHistory = [
@@ -41,8 +40,6 @@ const mockHistory = [
 ];
 
 export default async function HistoryPage() {
-  const session = await auth();
-
   return (
     <div className="max-w-6xl mx-auto px-6 py-12 md:py-24">
       <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
@@ -100,7 +97,7 @@ export default async function HistoryPage() {
         <div className="md:col-span-2 group relative bg-gradient-to-br from-primary to-primary-container p-8 rounded-xl overflow-hidden shadow-2xl shadow-primary/10">
           <div className="relative z-10 flex h-full flex-col justify-between">
             <div>
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-primary-container mb-4 block">Scholar's Insight</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-primary-container mb-4 block">Scholar&apos;s Insight</span>
               <h3 className="text-2xl font-bold text-white mb-4 max-w-md">Your most frequent study topic this week is <span className="text-secondary-fixed underline decoration-2 underline-offset-4">Calculus</span>.</h3>
               <p className="text-on-primary-container/80 max-w-sm">Reviewing your history shows consistent focus on integration techniques. Try a mock exam session to test your mastery.</p>
             </div>
