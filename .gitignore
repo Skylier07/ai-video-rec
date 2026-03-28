@@ -16,3 +16,13 @@ frontend/.env.local
 
 # Extension secrets (never commit API keys)
 extension/config.js
+
+# Tool-generated directories
+.claude/
+.superpowers/
+
+# SQLite local dev database
+backend/database.db
+
+# Root-level package-lock (empty, not a real workspace)
+package-lock.json
