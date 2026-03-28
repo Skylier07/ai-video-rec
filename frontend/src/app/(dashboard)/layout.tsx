@@ -1,6 +1,7 @@
 // Nested layout does not define Manrope nor globals.css 
 // (Those are now in the root layout in app/layout.tsx)
 import { TopNavBar, SideNavBar, BottomNavBar } from '@/components/Navigation';
+import ScreenRecorder from '@/components/ScreenRecorder';
 import { auth } from '@/auth';
 import { redirect } from 'next/navigation';
 
@@ -30,6 +31,7 @@ export default async function DashboardLayout({
           </main>
       </div>
       <BottomNavBar />
+      <ScreenRecorder />
     </>
   );
 }
