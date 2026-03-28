@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { GoogleGenAI, type Session, type LiveServerMessage } from "@google/genai";
+import { GoogleGenAI, Modality, type Session, type LiveServerMessage } from "@google/genai";
 
 const SYSTEM_INSTRUCTION = `You are a homework problem detector. You receive frames from a student's screen.
 
@@ -13,7 +13,7 @@ Your ONLY job:
   NO_PROBLEM
 - Never add any other text, explanation, or commentary.`;
 
-const MODEL = "gemini-3.1-flash-live-preview";
+const MODEL = "gemini-live-2.5-flash-preview";
 const CAPTURE_INTERVAL_MS = 5000;
 
 export default function ScreenRecorder() {
@@ -75,15 +75,8 @@ export default function ScreenRecorder() {
     latestBase64Ref.current = base64;
     pendingTextRef.current = "";
 
-    sessionRef.current.sendClientContent({
-      turns: [{
-        role: "user",
-        parts: [
-          { inlineData: { data: base64, mimeType: "image/jpeg" } },
-          { text: "Analyze this screen." },
-        ],
-      }],
-      turnComplete: true,
+    sessionRef.current.sendRealtimeInput({
+      video: { data: base64, mimeType: "image/jpeg" },
     });
   }, [captureFrame]);
 
@@ -119,7 +112,7 @@ export default function ScreenRecorder() {
       const session = await genAI.live.connect({
         model: MODEL,
         config: {
-          responseModalities: ["TEXT"],
+          responseModalities: [Modality.TEXT],
           systemInstruction: SYSTEM_INSTRUCTION,
         },
         callbacks: {
