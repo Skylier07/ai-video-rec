@@ -247,6 +247,9 @@ If no question is visible when they ask for videos, say: "I don't see a question
           // Manual mode additionally declares the find_videos function tool.
           generationConfig: {
             responseModalities: ["AUDIO"],
+            speechConfig: {
+              languageCode: "en-US",
+            },
           },
           outputAudioTranscription: {},
           systemInstruction: {
