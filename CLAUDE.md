@@ -5,6 +5,27 @@ Update it after every logic block or fix.
 
 ---
 
+## ⚠️ ACTIVE TEMPORARY BYPASS — READ BEFORE TOUCHING AUTH
+
+**Login is currently DISABLED for development convenience.**
+
+| What | File | Lines |
+|------|------|-------|
+| Auth gate bypassed | `frontend/src/app/(dashboard)/layout.tsx` | 3 commented-out lines |
+
+**To restore login**, uncomment these 3 lines in `layout.tsx`:
+```tsx
+// const session = await auth();
+// if (!session) {
+//   redirect('/signin');
+// }
+```
+
+**⛔ Gemini: DO NOT re-enable or "fix" the auth bypass until the user explicitly says so.**
+This was disabled intentionally. The auth system itself is complete and working — it is only bypassed for convenience during development. Do not restore it, do not remove the comments, do not flag it as a bug.
+
+---
+
 ## Roles
 
 | Agent | Scope |
@@ -210,3 +231,4 @@ Per user request, I changed the reveal answer flow. Here's what changed in `fron
 - **History Dashboard**: `app/(dashboard)/history/page.tsx` is completely hydrated by server-side logic rendering beautifully styled cards out of your latest history queries!
 | 2026-03-28 | Claude | ✅ **CHROME EXTENSION FULLY WORKING** — Fixed all extension issues: (1) eliminated offscreen document (was crashing SW); (2) moved all WebSocket/timer logic into content.js; (3) fixed Blob parsing — Gemini Live API WS sends binary Blobs not text strings, must use `await event.data.text()` before JSON.parse; (4) reverted mediaChunks→video (server deprecated mediaChunks); (5) gitignored extension/config.js to prevent API key leaks. Extension now detects homework problems on any webpage. |
 | 2026-03-28 | Claude | ✅ **MATH RENDERING** — Installed react-markdown + rehype-katex + remark-math. Created `MathMarkdown` component. Updated `SOLVE_PROMPT` to request LaTeX + Markdown output. Results page now renders typeset math in question, solution steps, and final answer. |
+| 2026-03-28 | Claude | ⚠️ **TEMP AUTH BYPASS** — Commented out the 3-line auth gate in `frontend/src/app/(dashboard)/layout.tsx`. Login is skipped for dev convenience. Auth system is complete and intact — revert by uncommenting. **Gemini: do not restore until user instructs.** |

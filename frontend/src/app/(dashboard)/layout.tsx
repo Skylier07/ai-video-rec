@@ -10,12 +10,14 @@ export default async function DashboardLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const session = await auth();
-  
-  // Route Protection: If not logged in, redirect to the Sign-In page!
-  if (!session) {
-    redirect('/signin');
-  }
+  // ============================================================
+  // TEMP AUTH BYPASS — re-enable before going to production
+  // To restore: uncomment the 3 lines below
+  // ============================================================
+  // const session = await auth();
+  // if (!session) {
+  //   redirect('/signin');
+  // }
   // Cache buster for Next.js Turbopack HMR
   
 
