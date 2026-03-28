@@ -96,10 +96,25 @@ If no question is visible when they ask for videos, say: "I don't see a question
   speakBtn.addEventListener("click", () => {
     if (!ws || ws.readyState !== WebSocket.OPEN) return;
     pendingText = "";
-    ws.send(JSON.stringify({ realtimeInput: { activityEnd: {} } }));
     speakBtn.textContent = "⏳";
     speakBtn.disabled = true;
-    console.log("[StudySnap] activityEnd sent — waiting for model response");
+
+    // Capture a fresh frame so the model sees exactly what's on screen right now,
+    // then immediately send activityEnd so both arrive in the same turn.
+    if (chrome.runtime?.id) {
+      chrome.runtime.sendMessage({ action: "captureTab" }, (response) => {
+        if (response?.dataUrl) {
+          const base64 = response.dataUrl.replace(/^data:image\/\w+;base64,/, "");
+          latestBase64 = base64;
+          ws.send(JSON.stringify({ realtimeInput: { video: { data: base64, mimeType: "image/jpeg" } } }));
+        }
+        ws.send(JSON.stringify({ realtimeInput: { activityEnd: {} } }));
+        console.log("[StudySnap] Fresh frame + activityEnd sent — waiting for model response");
+      });
+    } else {
+      ws.send(JSON.stringify({ realtimeInput: { activityEnd: {} } }));
+      console.log("[StudySnap] activityEnd sent — waiting for model response");
+    }
   });
 
   btn.addEventListener("click", () => {
@@ -184,9 +199,9 @@ If no question is visible when they ask for videos, say: "I don't see a question
     console.log("[StudySnap] Mic capture stopped");
   }
 
-  function playAudioChunk(base64Data) {
+  function playAudioChunk(base64Data, sampleRate = 24000) {
     if (!playbackContext) {
-      playbackContext = new AudioContext({ sampleRate: 24000 });
+      playbackContext = new AudioContext({ sampleRate });
       nextPlayTime = 0;
     }
     const binaryString = atob(base64Data);
@@ -199,7 +214,7 @@ If no question is visible when they ask for videos, say: "I don't see a question
     for (let i = 0; i < int16Array.length; i++) {
       float32Array[i] = int16Array[i] / 32768.0;
     }
-    const audioBuffer = playbackContext.createBuffer(1, float32Array.length, 24000);
+    const audioBuffer = playbackContext.createBuffer(1, float32Array.length, sampleRate);
     audioBuffer.getChannelData(0).set(float32Array);
     const source = playbackContext.createBufferSource();
     source.buffer = audioBuffer;
@@ -327,8 +342,15 @@ If no question is visible when they ask for videos, say: "I don't see a question
       // Play Gemini's audio response (manual mode only)
       if (detectionMode === "manual" && content.modelTurn?.parts) {
         for (const part of content.modelTurn.parts) {
-          if (part.inlineData?.mimeType === "audio/pcm;rate=24000") {
-            playAudioChunk(part.inlineData.data);
+          if (part.inlineData) {
+            const mime = part.inlineData.mimeType || "";
+            console.log("[StudySnap] Audio part mimeType:", mime);
+            if (mime.startsWith("audio/pcm")) {
+              // Extract sample rate from mimeType (e.g. "audio/pcm;rate=24000")
+              const rateMatch = mime.match(/rate=(\d+)/);
+              const sampleRate = rateMatch ? parseInt(rateMatch[1]) : 24000;
+              playAudioChunk(part.inlineData.data, sampleRate);
+            }
           }
         }
       }
