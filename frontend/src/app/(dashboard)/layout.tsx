@@ -10,16 +10,11 @@ export default async function DashboardLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  // ============================================================
-  // TEMP AUTH BYPASS — re-enable before going to production
-  // To restore: uncomment the 3 lines below
-  // ============================================================
-  // const session = await auth();
-  // if (!session) {
-  //   redirect('/signin');
-  // }
-  // Cache buster for Next.js Turbopack HMR
-  
+  const session = await auth();
+  if (!session) {
+    redirect('/signin');
+  }
+
 
   return (
     <>

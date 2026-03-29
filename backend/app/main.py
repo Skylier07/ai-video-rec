@@ -18,9 +18,14 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(title="StudySnap API", lifespan=lifespan)
 
+# Parse comma-separated origins; default to wildcard for local dev only.
+_cors_raw = os.getenv("CORS_ORIGINS", "*")
+ALLOWED_ORIGINS = [o.strip() for o in _cors_raw.split(",")]
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=ALLOWED_ORIGINS,
+    allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
