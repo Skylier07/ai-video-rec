@@ -1,9 +1,6 @@
 # StudySnap
 
-<a href="https://github.com/Skylier07/ai-video-rec">
-  <img alt="GitHub last commit (branch)"
-       src="https://img.shields.io/github/last-commit/Skylier07/ai-video-rec/backend-current-task">
-</a>
+<a href="https://github.com/Skylier07/ai-video-rec"> <img alt="GitHub last commit (branch)" src="https://img.shields.io/github/last-commit/Skylier07/ai-video-rec/feat/backend-current-task"> </a>
 
 StudySnap is a live chat and accurate video search chrome extension + website application. It utilizes Google's live-api for seemless interaction and overlay. It also serves as an accurate AI-powered YouTube search engine from questions using the extension overlay. Relying no longer on vague titles, but full context understanding through YouTube transcripts, giving users a combination of videos with exact timestamps to understand the needed concept ASAP without having to spend time on things outside of question scope. 
 **Built for 2026 Google GLITCH 24 Hours Hackathon**
