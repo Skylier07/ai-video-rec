@@ -5,6 +5,8 @@
 StudySnap is a live chat and accurate video search chrome extension + website application. It utilizes Google's live-api for seemless interaction and overlay. It also serves as an accurate AI-powered YouTube search engine from questions using the extension overlay. Relying no longer on vague titles, but full context understanding through YouTube transcripts, giving users a combination of videos with exact timestamps to understand the needed concept ASAP without having to spend time on things outside of question scope. 
 **Built for 2026 Google GLITCH 24 Hours Hackathon**
 
+<img width="1920" height="1080" alt="Detection Gif" src="https://github.com/user-attachments/assets/53ef34b5-e4d1-465b-9355-904386c36951" />
+
 ### Inspiration
 
 Before AI entered the market, when I feel stuck on a question (e.g. from my homework), I resort to finding YouTube videos online. If I have the option, I'd normally pick video explanation where the creator can draw and use animation freely over text as it makes it much easier for me to understand. Nowadays, students just send the entire question they don't understand to AI models, effectively "cheating" homework. While students can technically ask for a step by step guide, most struggle with textual learning and hence choose not to. However, if we ask modern models to find you videos that can help you solve the question, it often finds vague videos through it's title that can be hours long while all you really need are small snippets in the videos.
