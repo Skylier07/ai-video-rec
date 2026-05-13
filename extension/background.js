@@ -37,7 +37,8 @@ async function handleFindVideos(imageBase64, questionText) {
 
   await chrome.storage.session.set({ studysnap_input: data });
 
-  const tab = await chrome.tabs.create({ url: "http://localhost:3000/processing" });
+  const targetPath = (typeof CHAT_MODE !== "undefined" && CHAT_MODE) ? "/chat" : "/processing";
+  const tab = await chrome.tabs.create({ url: `${STUDYSNAP_URL}${targetPath}` });
 
   // Once the page has loaded, bridge the data into its localStorage
   const listener = (tabId, info) => {

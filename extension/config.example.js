@@ -5,3 +5,4 @@
 
 const GEMINI_API_KEY = "YOUR_GEMINI_API_KEY_HERE";
 const STUDYSNAP_URL = "http://localhost:3000";
+const CHAT_MODE = false; // Set true → opens /chat instead of /processing
