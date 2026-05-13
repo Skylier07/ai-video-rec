@@ -39,16 +39,6 @@ export function TopNavBar() {
           >
             History
           </Link>
-          <Link
-            className={`font-manrope font-bold tracking-tight px-3 py-1 rounded-lg transition-all duration-300 ${
-              isActive('/chat')
-                ? 'text-[#00236f] dark:text-[#e9c349] bg-slate-100 dark:bg-white/10'
-                : 'text-slate-500 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-white/10'
-            }`}
-            href="/chat"
-          >
-            Chat
-          </Link>
         </div>
       </div>
 
@@ -96,19 +86,6 @@ export function SideNavBar() {
         </Link>
         <Link
           className={`flex items-center gap-3 p-3 rounded-lg font-bold hover:translate-x-1 transition-all duration-200 ${
-            isActive('/chat')
-              ? 'text-[#00236f] dark:text-[#e9c349] bg-[#e3e1e9] dark:bg-[#1e3a8a]'
-              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'
-          }`}
-          href="/chat"
-        >
-          <span className="material-symbols-outlined">chat</span>
-          <span className="font-manrope text-sm font-semibold uppercase tracking-widest">
-            Chat
-          </span>
-        </Link>
-        <Link
-          className={`flex items-center gap-3 p-3 rounded-lg font-bold hover:translate-x-1 transition-all duration-200 ${
             isActive('/settings')
               ? 'text-[#00236f] dark:text-[#e9c349] bg-[#e3e1e9] dark:bg-[#1e3a8a]'
               : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-white/5'
@@ -141,17 +118,6 @@ export function BottomNavBar() {
       >
         <span className="material-symbols-outlined">home</span>
         <span className="font-manrope text-[10px] font-medium">Home</span>
-      </Link>
-      <Link
-        className={`flex flex-col items-center justify-center p-3 transition-all duration-300 ${
-          isActive('/chat')
-            ? 'bg-[#ffe088] dark:bg-[#e9c349] text-[#00236f] rounded-2xl transform -translate-y-2 animate-bounce-subtle shadow-lg'
-            : 'text-slate-500 dark:text-slate-400 hover:text-[#00236f]'
-        }`}
-        href="/chat"
-      >
-        <span className="material-symbols-outlined">chat</span>
-        <span className="font-manrope text-[10px] font-medium">Chat</span>
       </Link>
       <Link
         className="flex flex-col items-center justify-center text-slate-500 dark:text-slate-400 p-2 hover:text-[#00236f] dark:hover:text-[#e9c349] transition-all"

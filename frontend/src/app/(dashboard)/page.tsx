@@ -24,6 +24,7 @@ export default function Home() {
   const [text, setText] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [mode, setMode] = useState<"search" | "chat">("search");
 
   const canSubmit = (file !== null || text.trim().length > 0) && !isSubmitting;
 
@@ -74,7 +75,7 @@ export default function Home() {
       };
 
       localStorage.setItem("studysnap_input", JSON.stringify(input));
-      router.push("/processing");
+      router.push(mode === "chat" ? "/chat" : "/processing");
     } catch {
       setIsSubmitting(false);
     }
@@ -96,6 +97,34 @@ export default function Home() {
       </header>
 
       <div className="max-w-3xl mx-auto space-y-8">
+        {/* Mode Toggle */}
+        <div className="flex justify-center mb-6">
+          <div className="inline-flex items-center bg-surface-container-low rounded-xl p-1 border border-outline-variant/20">
+            <button
+              onClick={() => setMode("search")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${
+                mode === "search"
+                  ? "bg-primary text-on-primary shadow-sm"
+                  : "text-on-surface-variant hover:text-on-surface"
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">search</span>
+              Search Mode
+            </button>
+            <button
+              onClick={() => setMode("chat")}
+              className={`flex items-center gap-2 px-5 py-2.5 rounded-lg text-sm font-bold transition-all duration-200 ${
+                mode === "chat"
+                  ? "bg-primary text-on-primary shadow-sm"
+                  : "text-on-surface-variant hover:text-on-surface"
+              }`}
+            >
+              <span className="material-symbols-outlined text-base">auto_stories</span>
+              Chat Mode
+            </button>
+          </div>
+        </div>
+
         {/* Submit Button */}
         <div className="flex justify-center mb-10">
           <button
