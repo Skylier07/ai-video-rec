@@ -89,4 +89,13 @@ async def rank(request: RankRequest):
         *[_process_video(video, request.concepts) for video in request.videos]
     )
     all_segments = [seg for segs in results_per_video for seg in segs]
-    return RankResponse(segments=all_segments[:3])
+
+    # Deduplicate: same video_id + same start_time → keep longest end_time
+    seen: dict[tuple[str, int], VideoSegment] = {}
+    for seg in all_segments:
+        key = (seg.video_id, seg.start_time)
+        if key not in seen or seg.end_time > seen[key].end_time:
+            seen[key] = seg
+    deduped = list(seen.values())
+
+    return RankResponse(segments=deduped[:3])

@@ -2,6 +2,7 @@ import { auth } from "@/auth";
 import ThemeToggleSetting from "@/components/ThemeToggleSetting";
 import SolveModeSetting from "@/components/SolveModeSetting";
 import DetectionModeSetting from "@/components/DetectionModeSetting";
+import LiveApiSetting from "@/components/LiveApiSetting";
 import ClearHistoryButton from "@/components/ClearHistoryButton";
 import SignOutButton from "@/components/SignOutButton";
 
@@ -66,7 +67,10 @@ export default async function SettingsPage() {
         {/* Screen Recording */}
         <section className="bg-surface-container-lowest rounded-xl p-6 border border-outline-variant/10">
           <h2 className="text-xs font-black text-outline uppercase tracking-widest mb-4">Screen Recording</h2>
-          <DetectionModeSetting />
+          <div className="flex flex-col gap-6">
+            <DetectionModeSetting />
+            <LiveApiSetting />
+          </div>
         </section>
 
         {/* Data & Privacy */}

@@ -57,14 +57,6 @@ export function SideNavBar() {
   
   return (
     <aside className="h-screen w-64 hidden lg:flex flex-col border-r border-slate-100 dark:border-white/5 bg-[#faf8ff] dark:bg-[#001a4d] p-4 gap-4">
-      <div className="mb-8 px-2">
-        <h2 className="text-xl font-black text-[#00236f] dark:text-[#e9c349] leading-tight">
-          Study Archive
-        </h2>
-        <p className="text-[10px] font-bold uppercase tracking-widest text-slate-500 dark:text-slate-400">
-          Your Knowledge Hub
-        </p>
-      </div>
       <nav className="space-y-2">
         <Link
           className={`flex items-center gap-3 p-3 rounded-lg font-bold hover:translate-x-1 transition-all duration-200 ${
@@ -106,12 +98,6 @@ export function SideNavBar() {
           </span>
         </Link>
       </nav>
-      <div className="mt-auto p-4 bg-[#f4f3fa] dark:bg-[#00236f] rounded-xl border border-white/40">
-        <p className="text-xs font-bold text-primary mb-2">PRO FEATURES</p>
-        <button className="w-full py-2 bg-[#00236f] text-[#e9c349] rounded-lg font-bold text-sm hover:shadow-[0_0_15px_rgba(0,35,111,0.5)] transition-all">
-          Upgrade to Pro
-        </button>
-      </div>
     </aside>
   );
 }
